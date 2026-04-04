@@ -3,6 +3,13 @@ from io import BytesIO
 from PIL import Image
 from input_output_handler import read_image, save_image, parse_arguments
 from genetic_algorithm import run_genetic_algorithm
+from selectors import elite_selection, roulette_selection, universal_selection
+
+_SELECTORS = {
+    "elite": elite_selection,
+    "roulette": roulette_selection,
+    "universal": universal_selection,
+}
 
 
 def main():
@@ -22,11 +29,12 @@ def main():
         num_triangles=args.triangles,
         population_size=args.population_size,
         generations=args.generations,
-        individuals_kept=args.individuals_kept,
+        k=args.k,
         mutation_rate=args.mutation_rate,
         mutation_strength=args.mutation_strength,
         snapshot_interval=args.snapshot_interval,
         output_dir=args.output_dir,
+        selector=_SELECTORS[args.selector],
     )
 
     try:

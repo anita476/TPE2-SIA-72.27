@@ -17,6 +17,9 @@ class Genotype:
     vertices: Vertices
 
 
+Individual = list[Genotype]
+
+
 def get_overflow_bounds(width: int, height: int, delta: float = OVERFLOW_MARGIN_RATIO) -> tuple[int, int, int, int]:
     margin_x = int(width * delta)
     margin_y = int(height * delta)

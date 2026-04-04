@@ -27,4 +27,5 @@ def parse_arguments() -> argparse.Namespace:
     argument_parser.add_argument("--mutation-strength", type=float, default=0.3, help="Magnitude of each mutation (0.0 to 1.0)")
     argument_parser.add_argument("--snapshot-interval", type=int, default=0, help="Save snapshot every N generations (0=disabled)")
     argument_parser.add_argument("--output-dir", type=str, default="snapshots", help="Directory for snapshot images")
+    argument_parser.add_argument("--selector", type=str, default="elite", choices=["elite", "roulette", "universal"], help="Selection method (elite, roulette, universal)")
     return argument_parser.parse_args()

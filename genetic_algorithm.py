@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-import math
 import os
 import random
+from collections.abc import Callable
 from io import BytesIO
 
 import numpy as np
 from PIL import Image
 
-from genetic_utils import Genotype, random_triangle, mutate_genotype, get_overflow_bounds
+from genetic_utils import Genotype, Individual, random_triangle, mutate_genotype, get_overflow_bounds
 from image_utils import create_phenotype_image, compute_mae, save_phenotype_image
 
-Individual = list[Genotype]
+Selector = Callable[[list[Individual], list[float], int, random.Random], list[Individual]]
 
 
 def generate_initial_population(
@@ -25,23 +25,6 @@ def generate_initial_population(
     generate an initial population of individuals, where each individual is a list of Genotypes.
     """
     return [[random_triangle(max_x, max_y, rng) for _ in range(num_triangles)] for _ in range(population_size)]
-
-
-def elite_selection(
-    population: list[Individual],
-    fitness_scores: list[float],
-    k: int,
-) -> list[Individual]:
-    """Select K individuals by ranking them and repeating each one n(i) times."""
-    n = len(population)
-    paired = sorted(zip(fitness_scores, population), key=lambda x: x[0])
-    selected = []
-    for i, (_, individual) in enumerate(paired):
-        repeats = math.ceil((k - i) / n)
-        if repeats > 0:
-            selected.extend([individual] * repeats)
-
-    return selected[:k]
 
 
 def two_point_crossover(
@@ -139,6 +122,7 @@ def run_genetic_algorithm(
     mutation_strength: float,
     snapshot_interval: int,
     output_dir: str,
+    selector: Selector,
 ) -> bytes:
     """Run the genetic algorithm and return the best result as PNG bytes."""
     width, height = source_image.size
@@ -168,8 +152,8 @@ def run_genetic_algorithm(
         if snapshot_interval > 0 and (gen + 1) % snapshot_interval == 0:
             save_phenotype_image(best_individual, output_dir, gen, width, height)
 
-        elites = elite_selection(population, fitness_scores, k)
-        population = produce_offspring(elites, population_size, bounds, rng, mutation_rate, mutation_strength)
+        selected = selector(population, fitness_scores, k, rng)
+        population = produce_offspring(selected, population_size, bounds, rng, mutation_rate, mutation_strength)
 
     final_image = create_phenotype_image(best_individual, image_size=(width, height))
     buf = BytesIO()
