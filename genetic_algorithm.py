@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 import random
 from io import BytesIO
@@ -29,12 +30,18 @@ def generate_initial_population(
 def elite_selection(
     population: list[Individual],
     fitness_scores: list[float],
-    individuals_kept: float,
+    k: int,
 ) -> list[Individual]:
-    """Select the top-performing individuals based on their fitness scores."""
+    """Select K individuals by ranking them and repeating each one n(i) times."""
+    n = len(population)
     paired = sorted(zip(fitness_scores, population), key=lambda x: x[0])
-    elite_count = max(2, int(len(population) * individuals_kept))
-    return [individual for _, individual in paired[:elite_count]]
+    selected = []
+    for i, (_, individual) in enumerate(paired):
+        repeats = math.ceil((k - i) / n)
+        if repeats > 0:
+            selected.extend([individual] * repeats)
+
+    return selected[:k]
 
 
 def two_point_crossover(
@@ -127,7 +134,7 @@ def run_genetic_algorithm(
     num_triangles: int,
     population_size: int,
     generations: int,
-    individuals_kept: float,
+    k: int,
     mutation_rate: float,
     mutation_strength: float,
     snapshot_interval: int,
@@ -161,7 +168,7 @@ def run_genetic_algorithm(
         if snapshot_interval > 0 and (gen + 1) % snapshot_interval == 0:
             save_phenotype_image(best_individual, output_dir, gen, width, height)
 
-        elites = elite_selection(population, fitness_scores, individuals_kept)
+        elites = elite_selection(population, fitness_scores, k)
         population = produce_offspring(elites, population_size, bounds, rng, mutation_rate, mutation_strength)
 
     final_image = create_phenotype_image(best_individual, image_size=(width, height))

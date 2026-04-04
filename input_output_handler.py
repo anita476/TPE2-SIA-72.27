@@ -22,7 +22,7 @@ def parse_arguments() -> argparse.Namespace:
     argument_parser.add_argument("--triangles", type=int, required=True, help="Triangles to use in the approximation")
     argument_parser.add_argument("--population-size", type=int, required=True, help="Number of individuals in the population")
     argument_parser.add_argument("--generations", type=int, required=True, help="Number of generations to run")
-    argument_parser.add_argument("--individuals-kept", type=float, default=0.2, help="Fraction of top individuals kept (0.0 to 1.0)")
+    argument_parser.add_argument("--k", type=int, required=True, help="Top individuals kept")
     argument_parser.add_argument("--mutation-rate", type=float, default=0.1, help="Probability of mutating each triangle (0.0 to 1.0)")
     argument_parser.add_argument("--mutation-strength", type=float, default=0.3, help="Magnitude of each mutation (0.0 to 1.0)")
     argument_parser.add_argument("--snapshot-interval", type=int, default=0, help="Save snapshot every N generations (0=disabled)")
