@@ -46,14 +46,25 @@ def two_point_crossover(
     length = len(parent1)
 
     if length < 3:
-        pt = rng.randint(1, length - 1) if length > 1 else 1
-        child1 = parent1[:pt] + parent2[pt:]
-        child2 = parent2[:pt] + parent1[pt:]
-        return child1, child2
+        return one_point_crossover(parent1, parent2, rng)
 
     pt1, pt2 = sorted(rng.sample(range(1, length), 2))
     child1 = parent1[:pt1] + parent2[pt1:pt2] + parent1[pt2:]
     child2 = parent2[:pt1] + parent1[pt1:pt2] + parent2[pt2:]
+    return child1, child2
+
+
+def one_point_crossover(
+    parent1: Individual,
+    parent2: Individual,
+    rng: random.Random,
+) -> tuple[Individual, Individual]:
+    """Perform one-point crossover between two parent individuals to produce two child individuals."""
+    length = len(parent1)
+
+    pt = rng.randint(1, length - 1)
+    child1 = parent1[:pt] + parent2[pt:]
+    child2 = parent2[:pt] + parent1[pt:]
     return child1, child2
 
 
@@ -89,10 +100,7 @@ def evaluate_fitness(
     image_size: tuple[int, int],
 ) -> list[float]:
     """Compute MAE fitness for each individual in the population."""
-    return [
-        compute_mae(source_array, create_phenotype_image(individual, image_size=image_size))
-        for individual in population
-    ]
+    return [compute_mae(source_array, create_phenotype_image(individual, image_size=image_size)) for individual in population]
 
 
 def produce_offspring(
