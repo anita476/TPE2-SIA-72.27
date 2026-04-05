@@ -12,6 +12,7 @@ from genetic_utils import Genotype, Individual, random_triangle, mutate_genotype
 from image_utils import create_phenotype_image, compute_mae, save_phenotype_image
 
 Selector = Callable[[list[Individual], list[float], int, random.Random], list[Individual]]
+Crossover = Callable[[Individual, Individual, random.Random], tuple[Individual, Individual]]
 
 
 def generate_initial_population(
@@ -25,37 +26,6 @@ def generate_initial_population(
     generate an initial population of individuals, where each individual is a list of Genotypes.
     """
     return [[random_triangle(max_x, max_y, rng) for _ in range(num_triangles)] for _ in range(population_size)]
-
-
-def two_point_crossover(
-    parent1: Individual,
-    parent2: Individual,
-    rng: random.Random,
-) -> tuple[Individual, Individual]:
-    """Perform two-point crossover between two parent individuals to produce two child individuals."""
-    length = len(parent1)
-
-    if length < 3:
-        return one_point_crossover(parent1, parent2, rng)
-
-    pt1, pt2 = sorted(rng.sample(range(1, length), 2))
-    child1 = parent1[:pt1] + parent2[pt1:pt2] + parent1[pt2:]
-    child2 = parent2[:pt1] + parent1[pt1:pt2] + parent2[pt2:]
-    return child1, child2
-
-
-def one_point_crossover(
-    parent1: Individual,
-    parent2: Individual,
-    rng: random.Random,
-) -> tuple[Individual, Individual]:
-    """Perform one-point crossover between two parent individuals to produce two child individuals."""
-    length = len(parent1)
-
-    pt = rng.randint(1, length - 1)
-    child1 = parent1[:pt] + parent2[pt:]
-    child2 = parent2[:pt] + parent1[pt:]
-    return child1, child2
 
 
 def mutate_individual(
@@ -76,9 +46,10 @@ def cross_and_mutate(
     rng: random.Random,
     mutation_rate: float,
     mutation_strength: float,
+    crossover: Crossover,
 ) -> tuple[Individual, Individual]:
     """Perform crossover and mutation to produce two child individuals."""
-    child1, child2 = two_point_crossover(parent1, parent2, rng)
+    child1, child2 = crossover(parent1, parent2, rng)
     child1 = mutate_individual(child1, bounds, rng, mutation_rate, mutation_strength)
     child2 = mutate_individual(child2, bounds, rng, mutation_rate, mutation_strength)
     return child1, child2
@@ -100,12 +71,15 @@ def produce_offspring(
     rng: random.Random,
     mutation_rate: float,
     mutation_strength: float,
+    crossover: Crossover,
 ) -> list[Individual]:
     """Generate offspring via crossover and mutation to fill the population."""
     next_population: list[Individual] = list(individuals_remaining)
     while len(next_population) < population_size:
         p1, p2 = rng.sample(individuals_remaining, 2)
-        child1, child2 = cross_and_mutate(p1, p2, bounds, rng, mutation_rate, mutation_strength)
+        child1, child2 = cross_and_mutate(
+            p1, p2, bounds, rng, mutation_rate, mutation_strength, crossover
+        )
         next_population.append(child1)
         if len(next_population) < population_size:
             next_population.append(child2)
@@ -123,6 +97,7 @@ def run_genetic_algorithm(
     snapshot_interval: int,
     output_dir: str,
     selector: Selector,
+    crossover: Crossover,
 ) -> bytes:
     """Run the genetic algorithm and return the best result as PNG bytes."""
     width, height = source_image.size
@@ -153,7 +128,9 @@ def run_genetic_algorithm(
             save_phenotype_image(best_individual, output_dir, gen, width, height)
 
         selected = selector(population, fitness_scores, k, rng)
-        population = produce_offspring(selected, population_size, bounds, rng, mutation_rate, mutation_strength)
+        population = produce_offspring(
+            selected, population_size, bounds, rng, mutation_rate, mutation_strength, crossover
+        )
 
     final_image = create_phenotype_image(best_individual, image_size=(width, height))
     buf = BytesIO()

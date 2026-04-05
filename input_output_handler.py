@@ -28,4 +28,5 @@ def parse_arguments() -> argparse.Namespace:
     argument_parser.add_argument("--snapshot-interval", type=int, default=0, help="Save snapshot every N generations (0=disabled)")
     argument_parser.add_argument("--output-dir", type=str, default="snapshots", help="Directory for snapshot images")
     argument_parser.add_argument("--selector", type=str, default="elite", choices=["elite", "roulette", "universal"], help="Selection method (elite, roulette, universal)")
+    argument_parser.add_argument("--crossover", type=str, default="two_point", choices=["one_point", "two_point"], help="Crossover operator (one_point, two_point)")
     return argument_parser.parse_args()
