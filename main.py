@@ -3,6 +3,7 @@ from io import BytesIO
 from PIL import Image
 from input_output_handler import read_image, save_image, parse_arguments
 from crossovers import one_point_crossover, two_point_crossover
+from fitness import mae_fitness, mse_fitness, rmse_fitness
 from genetic_algorithm import run_genetic_algorithm
 from selectors import elite_selection, roulette_selection, universal_selection
 
@@ -15,6 +16,12 @@ _SELECTORS = {
 _CROSSOVERS = {
     "one_point": one_point_crossover,
     "two_point": two_point_crossover,
+}
+
+_FITNESS = {
+    "mae": mae_fitness,
+    "mse": mse_fitness,
+    "rmse": rmse_fitness,
 }
 
 
@@ -42,6 +49,7 @@ def main():
         output_dir=args.output_dir,
         selector=_SELECTORS[args.selector],
         crossover=_CROSSOVERS[args.crossover],
+        fitness_fn=_FITNESS[args.fitness],
     )
 
     try:

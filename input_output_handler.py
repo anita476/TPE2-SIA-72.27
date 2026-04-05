@@ -16,7 +16,9 @@ def save_image(image: bytes, path: str) -> None:
 
 
 def parse_arguments() -> argparse.Namespace:
-    argument_parser = argparse.ArgumentParser(description="Genetics Algorithm Engine that receives an image and processes it into a triangle aproximation.")
+    argument_parser = argparse.ArgumentParser(
+        description="Genetic algorithm that approximates an image with semi-transparent triangles."
+    )
     argument_parser.add_argument("--input_image", type=str, required=True, help="Path to the input image")
     argument_parser.add_argument("--output_image", type=str, default="output.png", help="Path to the output image")
     argument_parser.add_argument("--triangles", type=int, required=True, help="Triangles to use in the approximation")
@@ -29,4 +31,11 @@ def parse_arguments() -> argparse.Namespace:
     argument_parser.add_argument("--output-dir", type=str, default="snapshots", help="Directory for snapshot images")
     argument_parser.add_argument("--selector", type=str, default="elite", choices=["elite", "roulette", "universal"], help="Selection method (elite, roulette, universal)")
     argument_parser.add_argument("--crossover", type=str, default="two_point", choices=["one_point", "two_point"], help="Crossover operator (one_point, two_point)")
+    argument_parser.add_argument(
+        "--fitness",
+        type=str,
+        default="mae",
+        choices=["mae", "mse", "rmse"],
+        help="Fitness key (maps to mae_fitness, mse_fitness, rmse_fitness); RGBA, lower is better",
+    )
     return argument_parser.parse_args()

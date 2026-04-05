@@ -9,10 +9,11 @@ import numpy as np
 from PIL import Image
 
 from utils.genetic import Genotype, Individual, random_triangle, mutate_genotype, get_overflow_bounds
-from utils.image import create_phenotype_image, compute_mae, save_phenotype_image
+from utils.image import create_phenotype_image, save_phenotype_image
 
 Selector = Callable[[list[Individual], list[float], int, random.Random], list[Individual]]
 Crossover = Callable[[Individual, Individual, random.Random], tuple[Individual, Individual]]
+FitnessFn = Callable[[np.ndarray, Image.Image], float]
 
 
 def generate_initial_population(
@@ -59,9 +60,13 @@ def evaluate_fitness(
     population: list[Individual],
     source_array: np.ndarray,
     image_size: tuple[int, int],
+    fitness_fn: FitnessFn,
 ) -> list[float]:
-    """Compute MAE fitness for each individual in the population."""
-    return [compute_mae(source_array, create_phenotype_image(individual, image_size=image_size)) for individual in population]
+    """Compute fitness for each individual (lower is better)."""
+    return [
+        fitness_fn(source_array, create_phenotype_image(individual, image_size=image_size))
+        for individual in population
+    ]
 
 
 def produce_offspring(
@@ -98,6 +103,7 @@ def run_genetic_algorithm(
     output_dir: str,
     selector: Selector,
     crossover: Crossover,
+    fitness_fn: FitnessFn,
 ) -> bytes:
     """Run the genetic algorithm and return the best result as PNG bytes."""
     width, height = source_image.size
@@ -113,7 +119,7 @@ def run_genetic_algorithm(
     best_score = float("inf")
 
     for gen in range(generations):
-        fitness_scores = evaluate_fitness(population, source_array, (width, height))
+        fitness_scores = evaluate_fitness(population, source_array, (width, height), fitness_fn)
 
         gen_best_idx = fitness_scores.index(min(fitness_scores))
         gen_best_score = fitness_scores[gen_best_idx]
@@ -122,7 +128,9 @@ def run_genetic_algorithm(
             best_score = gen_best_score
             best_individual = population[gen_best_idx]
 
-        print(f"Generation {gen + 1}/{generations} | Best fitness (MAE): {best_score:.4f}")
+        print(
+            f"Generation {gen + 1}/{generations} | Best fitness ({fitness_fn.__name__}): {best_score:.4f}"
+        )
 
         if snapshot_interval > 0 and (gen + 1) % snapshot_interval == 0:
             save_phenotype_image(best_individual, output_dir, gen, width, height)
