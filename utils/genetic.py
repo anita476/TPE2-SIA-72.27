@@ -12,13 +12,12 @@ OVERFLOW_MARGIN_RATIO = 0.2
 
 
 @dataclass(slots=True, frozen=True)
-class Genotype:
+class Gene:
     color: Color
     vertices: Vertices
 
 
-Individual = list[Genotype]
-
+Individual = list[Gene]
 
 def get_overflow_bounds(width: int, height: int, delta: float = OVERFLOW_MARGIN_RATIO) -> tuple[int, int, int, int]:
     margin_x = int(width * delta)
@@ -33,29 +32,29 @@ def get_overflow_bounds(width: int, height: int, delta: float = OVERFLOW_MARGIN_
     return min_x, max_x, min_y, max_y
 
 
-def build_genotype(
+def build_gene(
     color: Color,
     vertices: Vertices,
-) -> Genotype:
+) -> Gene:
     if len(color) != 4:
         raise ValueError("Color must contain exactly 4 values: r, g, b, a")
 
     if len(vertices) != 3:
         raise ValueError("Vertices must contain exactly 3 positions")
 
-    return Genotype(color=color, vertices=vertices)
+    return Gene(color=color, vertices=vertices)
 
 
-def mutate_genotype(
-    genotype: Genotype,
+def mutate_gene(
+    gene: Gene,
     bounds: tuple[int, int, int, int],
     rng: random.Random,
     strength: float,
-) -> Genotype:
+) -> Gene:
     def clamp(value: int, lo: int, hi: int) -> int:
         return max(lo, min(hi, value))
 
-    r, g, b, a = genotype.color
+    r, g, b, a = gene.color
     delta = int(255 * strength)
     color = (
         clamp(r + rng.randint(-delta, delta), 0, 255),
@@ -72,17 +71,17 @@ def mutate_genotype(
             clamp(vx + rng.randint(-dx, dx), min_x, max_x_bound - 1),
             clamp(vy + rng.randint(-dy, dy), min_y, max_y_bound - 1),
         )
-        for vx, vy in genotype.vertices
+        for vx, vy in gene.vertices
     )
 
-    return Genotype(color=color, vertices=vertices)
+    return Gene(color=color, vertices=vertices)
 
 
 def random_triangle(
     max_x: int,
     max_y: int,
     rng: random.Random | None = None,
-) -> Genotype:
+) -> Gene:
     generator = rng if rng is not None else random.Random()
 
     color = (generator.randint(0, 255), generator.randint(0, 255), generator.randint(0, 255), generator.randint(0, 255))
@@ -94,4 +93,4 @@ def random_triangle(
         (generator.randrange(min_x_margin, max_x_margin), generator.randrange(min_y_margin, max_y_margin)),
     )
 
-    return build_genotype(color=color, vertices=vertices)
+    return build_gene(color=color, vertices=vertices)

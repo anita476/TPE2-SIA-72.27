@@ -8,7 +8,8 @@ from io import BytesIO
 import numpy as np
 from PIL import Image
 
-from utils.genetic import Genotype, Individual, random_triangle, mutate_genotype, get_overflow_bounds
+from survival_strategies import SurvivalStrategy
+from utils.genetic import Individual, random_triangle, mutate_gene, get_overflow_bounds
 from utils.image import create_phenotype_image, save_phenotype_image
 
 Selector = Callable[[list[Individual], list[float], int, random.Random], list[Individual]]
@@ -24,7 +25,7 @@ def generate_initial_population(
     rng: random.Random,
 ) -> list[Individual]:
     """
-    generate an initial population of individuals, where each individual is a list of Genotypes.
+    Generate an initial population of individuals, where each individual is a list of genes.
     """
     return [[random_triangle(max_x, max_y, rng) for _ in range(num_triangles)] for _ in range(population_size)]
 
@@ -37,7 +38,12 @@ def mutate_individual(
     mutation_strength: float,
 ) -> Individual:
     """Apply mutation to each triangle in an individual with the given probability."""
-    return [mutate_genotype(gene, bounds, rng, mutation_strength) if rng.random() < mutation_rate else gene for gene in individual]
+    return [
+        mutate_gene(gene, bounds, rng, mutation_strength)
+        if rng.random() < mutation_rate
+        else gene
+        for gene in individual
+    ]
 
 
 def cross_and_mutate(
@@ -69,26 +75,44 @@ def evaluate_fitness(
     ]
 
 
-def produce_offspring(
-    individuals_remaining: list[Individual],
-    population_size: int,
+def select_parent_pair(
+    parents: list[Individual],
+    rng: random.Random,
+) -> tuple[Individual, Individual]:
+    """Pick two parents for crossover"""
+    if not parents:
+        raise ValueError("At least one parent is required to generate offspring")
+
+    if len(parents) == 1:
+        return parents[0], parents[0]
+
+    parent1, parent2 = rng.sample(parents, 2)
+    return parent1, parent2
+
+
+def generate_offspring(
+    parents: list[Individual],
+    offspring_count: int,
     bounds: tuple[int, int, int, int],
     rng: random.Random,
     mutation_rate: float,
     mutation_strength: float,
     crossover: Crossover,
 ) -> list[Individual]:
-    """Generate offspring via crossover and mutation to fill the population."""
-    next_population: list[Individual] = list(individuals_remaining)
-    while len(next_population) < population_size:
-        p1, p2 = rng.sample(individuals_remaining, 2)
+    """Generate exactly K offspring from the selected parents."""
+    if offspring_count < 0:
+        raise ValueError("offspring_count must be non-negative")
+
+    offspring: list[Individual] = []
+    while len(offspring) < offspring_count:
+        p1, p2 = select_parent_pair(parents, rng)
         child1, child2 = cross_and_mutate(
             p1, p2, bounds, rng, mutation_rate, mutation_strength, crossover
         )
-        next_population.append(child1)
-        if len(next_population) < population_size:
-            next_population.append(child2)
-    return next_population
+        offspring.append(child1)
+        if len(offspring) < offspring_count:
+            offspring.append(child2)
+    return offspring
 
 
 def run_genetic_algorithm(
@@ -104,8 +128,10 @@ def run_genetic_algorithm(
     selector: Selector,
     crossover: Crossover,
     fitness_fn: FitnessFn,
+    survival_strategy: SurvivalStrategy,
 ) -> bytes:
     """Run the genetic algorithm and return the best result as PNG bytes."""
+
     width, height = source_image.size
     source_array = np.asarray(source_image.convert("RGBA"), dtype=np.int16)
     bounds = get_overflow_bounds(width, height)
@@ -135,9 +161,20 @@ def run_genetic_algorithm(
         if snapshot_interval > 0 and (gen + 1) % snapshot_interval == 0:
             save_phenotype_image(best_individual, output_dir, gen, width, height)
 
-        selected = selector(population, fitness_scores, k, rng)
-        population = produce_offspring(
-            selected, population_size, bounds, rng, mutation_rate, mutation_strength, crossover
+        parents = selector(population, fitness_scores, k, rng)
+        offspring = generate_offspring(
+            parents, k, bounds, rng, mutation_rate, mutation_strength, crossover
+        )
+        population = survival_strategy(
+            population,
+            fitness_scores,
+            offspring,
+            source_array,
+            (width, height),
+            fitness_fn,
+            selector,
+            population_size,
+            rng,
         )
 
     final_image = create_phenotype_image(best_individual, image_size=(width, height))

@@ -6,6 +6,7 @@ from crossovers import one_point_crossover, two_point_crossover
 from fitness import mae_fitness, mse_fitness, rmse_fitness
 from genetic_algorithm import run_genetic_algorithm
 from selectors import elite_selection, roulette_selection, universal_selection
+from survival_strategies import additive_survival, exclusive_survival
 
 _SELECTORS = {
     "elite": elite_selection,
@@ -22,6 +23,11 @@ _FITNESS = {
     "mae": mae_fitness,
     "mse": mse_fitness,
     "rmse": rmse_fitness,
+}
+
+_SURVIVAL_STRATEGIES = {
+    "additive": additive_survival,
+    "exclusive": exclusive_survival,
 }
 
 
@@ -50,6 +56,7 @@ def main():
         selector=_SELECTORS[args.selector],
         crossover=_CROSSOVERS[args.crossover],
         fitness_fn=_FITNESS[args.fitness],
+        survival_strategy=_SURVIVAL_STRATEGIES[args.survival_strategy],
     )
 
     try:
