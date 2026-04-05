@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 
-from genetic_utils import Individual
+from utils.genetic import Individual
 
 from .one_point import one_point_crossover
 

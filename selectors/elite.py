@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import random
 
-from genetic_utils import Individual
+from utils.genetic import Individual
 
 
 def elite_selection(

@@ -8,8 +8,8 @@ from io import BytesIO
 import numpy as np
 from PIL import Image
 
-from genetic_utils import Genotype, Individual, random_triangle, mutate_genotype, get_overflow_bounds
-from image_utils import create_phenotype_image, compute_mae, save_phenotype_image
+from utils.genetic import Genotype, Individual, random_triangle, mutate_genotype, get_overflow_bounds
+from utils.image import create_phenotype_image, compute_mae, save_phenotype_image
 
 Selector = Callable[[list[Individual], list[float], int, random.Random], list[Individual]]
 Crossover = Callable[[Individual, Individual, random.Random], tuple[Individual, Individual]]

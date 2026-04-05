@@ -3,7 +3,8 @@ from __future__ import annotations
 import os
 import numpy as np
 from PIL import Image, ImageDraw
-from genetic_utils import Color, Genotype
+
+from .genetic import Color, Genotype
 
 
 def create_phenotype_image(
@@ -19,12 +20,14 @@ def create_phenotype_image(
 
     return canvas
 
+
 def save_phenotype_image(best_individual: list[Genotype], output_dir: str, gen: int, width: int, height: int) -> None:
     """Render the individual as an image and save it as a snapshot PNG."""
     snapshot_img = create_phenotype_image(best_individual, image_size=(width, height))
     snapshot_path = os.path.join(output_dir, f"gen_{gen + 1:06d}.png")
     snapshot_img.save(snapshot_path, format="PNG")
     print(f'Snapshot saved: "{os.path.basename(snapshot_path)}"')
+
 
 def compute_mae(source_array: np.ndarray, candidate: Image.Image) -> float:
     """Compute Mean Absolute Error (MAE) between a pre-converted source array and a candidate image."""
