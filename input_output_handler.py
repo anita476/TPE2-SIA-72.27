@@ -44,6 +44,13 @@ def parse_arguments() -> argparse.Namespace:
         help="Fitness key (maps to mae_fitness, mse_fitness, rmse_fitness); RGBA, lower is better",
     )
     argument_parser.add_argument(
+        "--mutation",
+        type=str,
+        default="multigen_uniform",
+        choices=["gen", "multigen_limited", "multigen_uniform", "complete"],
+        help="Mutation strategy: gen (single gene), multigen_limited (random subset), multigen_uniform (each gene independently), complete (all genes)",
+    )
+    argument_parser.add_argument(
         "--survival_strategy",
         type=str,
         default="additive",

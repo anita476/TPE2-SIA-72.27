@@ -10,6 +10,10 @@ from fitness.mse import mse_fitness
 from fitness.rmse import rmse_fitness
 from genetic_algorithm import run_genetic_algorithm
 from input_output_handler import read_image, save_image, parse_arguments
+from mutations.gen import gen_mutation
+from mutations.multigen_limited import multigen_limited_mutation
+from mutations.multigen_uniform import multigen_uniform_mutation
+from mutations.complete import complete_mutation
 from selection.boltzmann import AnnealedBoltzmann
 from selection.elite import elite_selection as elite
 from selection.ranking import ranking
@@ -27,6 +31,13 @@ FITNESS_MAP = {
     "mae": mae_fitness,
     "mse": mse_fitness,
     "rmse": rmse_fitness,
+}
+
+MUTATION_MAP = {
+    "gen": gen_mutation,
+    "multigen_limited": multigen_limited_mutation,
+    "multigen_uniform": multigen_uniform_mutation,
+    "complete": complete_mutation,
 }
 
 SURVIVAL_MAP = {
@@ -65,6 +76,7 @@ def main():
         crossover=CROSSOVER_MAP[args.crossover],
         fitness_fn=FITNESS_MAP[args.fitness],
         survival_strategy=SURVIVAL_MAP[args.survival_strategy],
+        mutation_fn=MUTATION_MAP[args.mutation],
         mutation_rate=args.mutation_rate,
         mutation_strength=args.mutation_strength,
         snapshot_interval=args.snapshot_interval,

@@ -8,13 +8,14 @@ from io import BytesIO
 import numpy as np
 from PIL import Image
 
-from survival_strategies.common import SurvivalStrategy
+from survival_strategies.common import SurvivalStrategy, evaluate_population_fitness
 from utils.genetic import Individual, random_triangle, mutate_gene, get_overflow_bounds
 from utils.image import create_phenotype_image, save_phenotype_image
 
 Selector = Callable[[list[Individual], list[float], int, random.Random], list[Individual]]
 Crossover = Callable[[Individual, Individual, random.Random], tuple[Individual, Individual]]
 FitnessFn = Callable[[np.ndarray, Image.Image], float]
+MutationFn = Callable[[Individual, tuple[int, int, int, int], random.Random, float, float], Individual]
 
 
 def generate_initial_population(
@@ -30,22 +31,6 @@ def generate_initial_population(
     return [[random_triangle(max_x, max_y, rng) for _ in range(num_triangles)] for _ in range(population_size)]
 
 
-def mutate_individual(
-    individual: Individual,
-    bounds: tuple[int, int, int, int],
-    rng: random.Random,
-    mutation_rate: float,
-    mutation_strength: float,
-) -> Individual:
-    """Apply mutation to each triangle in an individual with the given probability."""
-    return [
-        mutate_gene(gene, bounds, rng, mutation_strength)
-        if rng.random() < mutation_rate
-        else gene
-        for gene in individual
-    ]
-
-
 def cross_and_mutate(
     parent1: Individual,
     parent2: Individual,
@@ -54,25 +39,13 @@ def cross_and_mutate(
     mutation_rate: float,
     mutation_strength: float,
     crossover: Crossover,
+    mutation_fn: MutationFn,
 ) -> tuple[Individual, Individual]:
     """Perform crossover and mutation to produce two child individuals."""
     child1, child2 = crossover(parent1, parent2, rng)
-    child1 = mutate_individual(child1, bounds, rng, mutation_rate, mutation_strength)
-    child2 = mutate_individual(child2, bounds, rng, mutation_rate, mutation_strength)
+    child1 = mutation_fn(child1, bounds, rng, mutation_rate, mutation_strength)
+    child2 = mutation_fn(child2, bounds, rng, mutation_rate, mutation_strength)
     return child1, child2
-
-
-def evaluate_fitness(
-    population: list[Individual],
-    source_array: np.ndarray,
-    image_size: tuple[int, int],
-    fitness_fn: FitnessFn,
-) -> list[float]:
-    """Compute fitness for each individual (lower is better)."""
-    return [
-        fitness_fn(source_array, create_phenotype_image(individual, image_size=image_size))
-        for individual in population
-    ]
 
 
 def select_parent_pair(
@@ -98,6 +71,7 @@ def generate_offspring(
     mutation_rate: float,
     mutation_strength: float,
     crossover: Crossover,
+    mutation_fn: MutationFn,
 ) -> list[Individual]:
     """Generate exactly K offspring from the selected parents."""
     if offspring_count < 0:
@@ -107,7 +81,7 @@ def generate_offspring(
     while len(offspring) < offspring_count:
         p1, p2 = select_parent_pair(parents, rng)
         child1, child2 = cross_and_mutate(
-            p1, p2, bounds, rng, mutation_rate, mutation_strength, crossover
+            p1, p2, bounds, rng, mutation_rate, mutation_strength, crossover, mutation_fn
         )
         offspring.append(child1)
         if len(offspring) < offspring_count:
@@ -129,6 +103,7 @@ def run_genetic_algorithm(
     crossover: Crossover,
     fitness_fn: FitnessFn,
     survival_strategy: SurvivalStrategy,
+    mutation_fn: MutationFn,
 ) -> bytes:
     """Run the genetic algorithm and return the best result as PNG bytes."""
 
@@ -145,7 +120,7 @@ def run_genetic_algorithm(
     best_score = float("inf")
 
     for gen in range(generations):
-        fitness_scores = evaluate_fitness(population, source_array, (width, height), fitness_fn)
+        fitness_scores = evaluate_population_fitness(population, source_array, (width, height), fitness_fn)
 
         gen_best_idx = fitness_scores.index(min(fitness_scores))
         gen_best_score = fitness_scores[gen_best_idx]
@@ -162,9 +137,9 @@ def run_genetic_algorithm(
             save_phenotype_image(best_individual, output_dir, gen, width, height)
 
         parents = selector(population, fitness_scores, k, rng)
-        
+
         offspring = generate_offspring(
-            parents, k, bounds, rng, mutation_rate, mutation_strength, crossover
+            parents, k, bounds, rng, mutation_rate, mutation_strength, crossover, mutation_fn
         )
         population = survival_strategy(
             population,
