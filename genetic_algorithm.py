@@ -8,7 +8,7 @@ from io import BytesIO
 import numpy as np
 from PIL import Image
 
-from survival_strategies import SurvivalStrategy
+from survival_strategies.common import SurvivalStrategy
 from utils.genetic import Individual, random_triangle, mutate_gene, get_overflow_bounds
 from utils.image import create_phenotype_image, save_phenotype_image
 
@@ -162,6 +162,7 @@ def run_genetic_algorithm(
             save_phenotype_image(best_individual, output_dir, gen, width, height)
 
         parents = selector(population, fitness_scores, k, rng)
+        
         offspring = generate_offspring(
             parents, k, bounds, rng, mutation_rate, mutation_strength, crossover
         )

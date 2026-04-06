@@ -34,7 +34,7 @@ def parse_arguments() -> argparse.Namespace:
     argument_parser.add_argument("--mutation-strength", type=float, default=0.3, help="Magnitude of each mutation (0.0 to 1.0)")
     argument_parser.add_argument("--snapshot-interval", type=int, default=0, help="Save snapshot every N generations (0=disabled)")
     argument_parser.add_argument("--output-dir", type=str, default="snapshots", help="Directory for snapshot images")
-    argument_parser.add_argument("--selector", type=str, default="elite", choices=["elite", "roulette", "universal"], help="Selection method (elite, roulette, universal)")
+    argument_parser.add_argument("--selector", type=str, default="elite", choices=["elite", "roulette", "universal", "ranking", "boltzmann"], help="Selection method (elite, roulette, universal, ranking, boltzmann)")
     argument_parser.add_argument("--crossover", type=str, default="two_point", choices=["one_point", "two_point"], help="Crossover operator (one_point, two_point)")
     argument_parser.add_argument(
         "--fitness",
@@ -50,4 +50,7 @@ def parse_arguments() -> argparse.Namespace:
         choices=["additive", "exclusive"],
         help="Survival strategy for the next generation: additive or exclusive",
     )
+    argument_parser.add_argument("--temperature", type=float, default=50.0, help="Initial temperature T_0 for Boltzmann selection")
+    argument_parser.add_argument("--temperature-min", type=float, default=1.0, help="Convergence temperature T_c for Boltzmann selection")
+    argument_parser.add_argument("--temperature-decay", type=float, default=-0.005, help="Decay constant k for Boltzmann schedule: T(t) = T_c + (T_0 - T_c) * e^(k*t), k < 0 for cooling")
     return argument_parser.parse_args()

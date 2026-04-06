@@ -1,33 +1,37 @@
 import sys
 from io import BytesIO
+
 from PIL import Image
-from input_output_handler import read_image, save_image, parse_arguments
-from crossovers import one_point_crossover, two_point_crossover
-from fitness import mae_fitness, mse_fitness, rmse_fitness
+
+from crossovers.one_point import one_point_crossover as one_point
+from crossovers.two_point import two_point_crossover as two_point
+from fitness.mae import mae_fitness
+from fitness.mse import mse_fitness
+from fitness.rmse import rmse_fitness
 from genetic_algorithm import run_genetic_algorithm
-from selectors import elite_selection, roulette_selection, universal_selection
-from survival_strategies import additive_survival, exclusive_survival
+from input_output_handler import read_image, save_image, parse_arguments
+from selection.boltzmann import AnnealedBoltzmann
+from selection.elite import elite_selection as elite
+from selection.ranking import ranking
+from selection.roulette import roulette_selection as roulette
+from selection.universal import universal_selection as universal
+from survival_strategies.additive import additive_survival as additive
+from survival_strategies.exclusive import exclusive_survival as exclusive
 
-_SELECTORS = {
-    "elite": elite_selection,
-    "roulette": roulette_selection,
-    "universal": universal_selection,
+CROSSOVER_MAP = {
+    "one_point": one_point,
+    "two_point": two_point,
 }
 
-_CROSSOVERS = {
-    "one_point": one_point_crossover,
-    "two_point": two_point_crossover,
-}
-
-_FITNESS = {
+FITNESS_MAP = {
     "mae": mae_fitness,
     "mse": mse_fitness,
     "rmse": rmse_fitness,
 }
 
-_SURVIVAL_STRATEGIES = {
-    "additive": additive_survival,
-    "exclusive": exclusive_survival,
+SURVIVAL_MAP = {
+    "additive": additive,
+    "exclusive": exclusive,
 }
 
 
@@ -43,20 +47,28 @@ def main():
     with Image.open(BytesIO(image_bytes)) as img:
         source_image = img.convert("RGBA").copy()
 
+    selector_map = {
+        "elite":      elite,
+        "roulette":   roulette,
+        "universal":  universal,
+        "ranking":    ranking,
+        "boltzmann":  AnnealedBoltzmann(args.temperature, args.temperature_min, args.temperature_decay),
+    }
+
     result = run_genetic_algorithm(
         source_image=source_image,
         num_triangles=args.triangles,
         population_size=args.population_size,
         generations=args.generations,
         k=args.k,
+        selector=selector_map[args.selector],
+        crossover=CROSSOVER_MAP[args.crossover],
+        fitness_fn=FITNESS_MAP[args.fitness],
+        survival_strategy=SURVIVAL_MAP[args.survival_strategy],
         mutation_rate=args.mutation_rate,
         mutation_strength=args.mutation_strength,
         snapshot_interval=args.snapshot_interval,
         output_dir=args.output_dir,
-        selector=_SELECTORS[args.selector],
-        crossover=_CROSSOVERS[args.crossover],
-        fitness_fn=_FITNESS[args.fitness],
-        survival_strategy=_SURVIVAL_STRATEGIES[args.survival_strategy],
     )
 
     try:
