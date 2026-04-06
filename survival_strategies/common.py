@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import random
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 from PIL import Image
 
 from utils.genetic import Individual
 from utils.image import create_phenotype_image
+
+_WORKERS = 8
+_pool = ThreadPoolExecutor(max_workers=_WORKERS)
 
 Selector = Callable[[list[Individual], list[float], int, random.Random], list[Individual]]
 FitnessFn = Callable[[np.ndarray, Image.Image], float]
@@ -34,7 +38,8 @@ def evaluate_population_fitness(
     fitness_fn: FitnessFn,
 ) -> list[float]:
     """Compute fitness for each individual."""
-    return [
-        fitness_fn(source_array, create_phenotype_image(individual, image_size=image_size))
-        for individual in population
-    ]
+
+    def _eval(individual: Individual) -> float:
+        return fitness_fn(source_array, create_phenotype_image(individual, image_size=image_size))
+
+    return list(_pool.map(_eval, population))
