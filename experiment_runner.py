@@ -36,7 +36,7 @@ from io import BytesIO
 
 from PIL import Image
 
-from utils.dispatch import CROSSOVER_MAP, FITNESS_MAP, SURVIVAL_MAP, build_selector, build_stop_condition
+from utils.dispatch import CROSSOVER_MAP, FITNESS_MAP, MUTATION_MAP, SURVIVAL_MAP, build_selector, build_stop_condition
 from genetic_algorithm import run_genetic_algorithm
 from input_output_handler import read_image
 
@@ -83,6 +83,7 @@ def run_experiments(grid_config_path: str, output_csv: str, save_images: bool) -
                 crossover=CROSSOVER_MAP[merged["crossover"]],
                 fitness_fn=FITNESS_MAP[merged["fitness"]],
                 survival_strategy=SURVIVAL_MAP[merged["survival_strategy"]],
+                mutation_fn=MUTATION_MAP[merged.get("mutation", "multigen_uniform")],
                 mutation_rate=merged.get("mutation_rate", 0.1),
                 mutation_strength=merged.get("mutation_strength", 0.3),
                 snapshot_interval=0,
