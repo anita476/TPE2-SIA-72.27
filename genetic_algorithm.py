@@ -3,14 +3,24 @@ from __future__ import annotations
 import os
 import random
 from collections.abc import Callable
+from dataclasses import dataclass
 from io import BytesIO
 
 import numpy as np
 from PIL import Image
 
+from utils.stop_conditions import StopCondition
 from survival_strategies.common import SurvivalStrategy, evaluate_population_fitness
-from utils.genetic import Individual, random_triangle, mutate_gene, get_overflow_bounds
+from utils.genetic import Individual, random_triangle, get_overflow_bounds
 from utils.image import create_phenotype_image, save_phenotype_image
+
+
+@dataclass
+class GAResult:
+    image_bytes: bytes
+    best_fitness: float
+    generations_run: int
+
 
 Selector = Callable[[list[Individual], list[float], int, random.Random], list[Individual]]
 Crossover = Callable[[Individual, Individual, random.Random], tuple[Individual, Individual]]
@@ -25,9 +35,7 @@ def generate_initial_population(
     max_y: int,
     rng: random.Random,
 ) -> list[Individual]:
-    """
-    Generate an initial population of individuals, where each individual is a list of genes.
-    """
+    """Generate an initial population of individuals, where each individual is a list of genes."""
     return [[random_triangle(max_x, max_y, rng) for _ in range(num_triangles)] for _ in range(population_size)]
 
 
@@ -52,13 +60,11 @@ def select_parent_pair(
     parents: list[Individual],
     rng: random.Random,
 ) -> tuple[Individual, Individual]:
-    """Pick two parents for crossover"""
+    """Pick two parents for crossover."""
     if not parents:
         raise ValueError("At least one parent is required to generate offspring")
-
     if len(parents) == 1:
         return parents[0], parents[0]
-
     parent1, parent2 = rng.sample(parents, 2)
     return parent1, parent2
 
@@ -104,8 +110,9 @@ def run_genetic_algorithm(
     fitness_fn: FitnessFn,
     survival_strategy: SurvivalStrategy,
     mutation_fn: MutationFn,
-) -> bytes:
-    """Run the genetic algorithm and return the best result as PNG bytes."""
+    stop_condition: StopCondition | None = None,
+) -> GAResult:
+    """Run the genetic algorithm and return the best result and metrics."""
 
     width, height = source_image.size
     source_array = np.asarray(source_image.convert("RGBA"), dtype=np.int16)
@@ -118,6 +125,7 @@ def run_genetic_algorithm(
 
     best_individual = population[0]
     best_score = float("inf")
+    generations_run = generations
 
     for gen in range(generations):
         fitness_scores = evaluate_population_fitness(population, source_array, (width, height), fitness_fn)
@@ -132,6 +140,11 @@ def run_genetic_algorithm(
         print(
             f"Generation {gen + 1}/{generations} | Best fitness ({fitness_fn.__name__}): {best_score:.4f}"
         )
+
+        if stop_condition and stop_condition(gen, best_score, fitness_scores):
+            print(f"Stop condition met at generation {gen + 1}.")
+            generations_run = gen + 1
+            break
 
         if snapshot_interval > 0 and (gen + 1) % snapshot_interval == 0:
             save_phenotype_image(best_individual, output_dir, gen, width, height)
@@ -156,4 +169,4 @@ def run_genetic_algorithm(
     final_image = create_phenotype_image(best_individual, image_size=(width, height))
     buf = BytesIO()
     final_image.save(buf, format="PNG")
-    return buf.getvalue()
+    return GAResult(image_bytes=buf.getvalue(), best_fitness=best_score, generations_run=generations_run)

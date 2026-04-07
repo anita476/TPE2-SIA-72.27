@@ -1,0 +1,20 @@
+{
+  "base": {
+    "input_image": "input/Flag_of_France.svg.png",
+    "triangles": 200,
+    "mutation_rate": 0.1,
+    "mutation_strength": 0.3,
+    "convergence_window": 100,
+    "convergence_delta": 0.01,
+    "output_dir": "output/experiments"
+  },
+  "grid": {
+    "selector":          ["elite", "roulette", "universal", "boltzmann"],
+    "crossover":         ["one_point", "two_point"],
+    "fitness":           ["mae", "mse"],
+    "survival_strategy": ["additive", "exclusive"],
+    "population_size":   [50, 100],
+    "generations":       [500],
+    "k":                 [20, 50]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "input_image": "input/Flag_of_France.svg.png",
+  "output_image": "output/Flag_of_France.png",
+  "triangles": 200,
+  "population_size": 100,
+  "generations": 500,
+  "k": 30,
+  "selector": "elite",
+  "crossover": "two_point",
+  "fitness": "mae",
+  "survival_strategy": "additive",
+  "snapshot_interval": 50,
+  "output_dir": "output/france_snapshots"
+}
