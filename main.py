@@ -19,6 +19,8 @@ from selection.elite import elite_selection as elite
 from selection.ranking import ranking
 from selection.roulette import roulette_selection as roulette
 from selection.universal import universal_selection as universal
+from selection.tournament_deterministic import  tournament_deterministic
+from selection.tournament_stochastic import tournament_stochastic
 from survival_strategies.additive import additive_survival as additive
 from survival_strategies.exclusive import exclusive_survival as exclusive
 
@@ -64,6 +66,8 @@ def main():
         "universal":  universal,
         "ranking":    ranking,
         "boltzmann":  AnnealedBoltzmann(args.temperature, args.temperature_min, args.temperature_decay),
+        "tournament_det": tournament_deterministic,
+        "tournament_stoch": tournament_stochastic
     }
 
     result = run_genetic_algorithm(
