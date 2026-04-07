@@ -11,7 +11,7 @@ StopCondition = Callable[[int, float, list[float]], bool]
 def target_fitness(threshold: float) -> StopCondition:
     """Stop when the best fitness reaches or goes below the threshold."""
     def condition(_generation: int, best_score: float, _fitness_scores: list[float]) -> bool:
-        return best_score <= threshold
+        return best_score >= threshold
     return condition
 
 def no_improvement(window: int, min_delta: float = 1e-4) -> StopCondition:
@@ -22,7 +22,7 @@ def no_improvement(window: int, min_delta: float = 1e-4) -> StopCondition:
         history.append(best_score)
         if len(history) < window:
             return False
-        return (history[-window] - history[-1]) < min_delta
+        return (history[-1] - history[-window]) < min_delta
 
     return condition
 

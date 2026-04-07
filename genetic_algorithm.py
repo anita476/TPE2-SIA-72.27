@@ -124,16 +124,16 @@ def run_genetic_algorithm(
         os.makedirs(output_dir, exist_ok=True)
 
     best_individual = population[0]
-    best_score = float("inf")
+    best_score = 0.0
     generations_run = generations
 
     for gen in range(generations):
         fitness_scores = evaluate_population_fitness(population, source_array, (width, height), fitness_fn)
 
-        gen_best_idx = fitness_scores.index(min(fitness_scores))
+        gen_best_idx = fitness_scores.index(max(fitness_scores))
         gen_best_score = fitness_scores[gen_best_idx]
 
-        if gen_best_score < best_score:
+        if gen_best_score > best_score:
             best_score = gen_best_score
             best_individual = population[gen_best_idx]
 

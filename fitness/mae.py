@@ -7,6 +7,7 @@ from .common import candidate_to_rgba_f64, source_as_f64
 
 
 def mae_fitness(source_array: np.ndarray, candidate: Image.Image) -> float:
-    """Mean absolute error over RGBA channels; lower is better."""
+    """Mean absolute error fitness over RGBA channels; higher is better (1 = perfect match)."""
     diff = source_as_f64(source_array) - candidate_to_rgba_f64(candidate)
-    return float(np.mean(np.abs(diff)))
+    mae = float(np.mean(np.abs(diff)))
+    return 1.0 - mae / 255.0

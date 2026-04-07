@@ -14,7 +14,7 @@ def elite_selection(
 ) -> list[Individual]:
     """Select K individuals by ranking them and repeating each one n(i) times."""
     n = len(population)
-    paired = sorted(zip(fitness_scores, population), key=lambda x: x[0])
+    paired = sorted(zip(fitness_scores, population), key=lambda x: x[0], reverse=True)
     selected = []
     for i, (_, individual) in enumerate(paired):
         repeats = math.ceil((k - i) / n)
