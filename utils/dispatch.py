@@ -5,14 +5,20 @@ from crossovers.two_point import two_point_crossover as two_point
 from fitness.mae import mae_fitness
 from fitness.mse import mse_fitness
 from fitness.rmse import rmse_fitness
+from mutations.complete import complete_mutation
+from mutations.gen import gen_mutation
+from mutations.multigen_limited import multigen_limited_mutation
+from mutations.multigen_uniform import multigen_uniform_mutation
 from selection.boltzmann import AnnealedBoltzmann
 from selection.elite import elite_selection as elite
 from selection.ranking import ranking
 from selection.roulette import roulette_selection as roulette
+from selection.tournament_deterministic import tournament_deterministic
+from selection.tournament_stochastic import tournament_stochastic
 from selection.universal import universal_selection as universal
-from utils.stop_conditions import StopCondition, any_of, no_improvement, target_fitness, time_limit
 from survival_strategies.additive import additive_survival as additive
 from survival_strategies.exclusive import exclusive_survival as exclusive
+from utils.stop_conditions import StopCondition, any_of, no_improvement, target_fitness, time_limit
 
 CROSSOVER_MAP = {
     "one_point": one_point,
@@ -25,6 +31,13 @@ FITNESS_MAP = {
     "rmse": rmse_fitness,
 }
 
+MUTATION_MAP = {
+    "gen":               gen_mutation,
+    "multigen_limited":  multigen_limited_mutation,
+    "multigen_uniform":  multigen_uniform_mutation,
+    "complete":          complete_mutation,
+}
+
 SURVIVAL_MAP = {
     "additive":  additive,
     "exclusive": exclusive,
@@ -33,11 +46,13 @@ SURVIVAL_MAP = {
 
 def build_selector(name: str, temperature: float, temperature_min: float, temperature_decay: float):
     selector_map = {
-        "elite":     elite,
-        "roulette":  roulette,
-        "universal": universal,
-        "ranking":   ranking,
-        "boltzmann": AnnealedBoltzmann(temperature, temperature_min, temperature_decay),
+        "elite":            elite,
+        "roulette":         roulette,
+        "universal":        universal,
+        "ranking":          ranking,
+        "boltzmann":        AnnealedBoltzmann(temperature, temperature_min, temperature_decay),
+        "tournament_det":   tournament_deterministic,
+        "tournament_stoch": tournament_stochastic,
     }
     return selector_map[name]
 
