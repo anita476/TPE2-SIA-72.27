@@ -63,13 +63,13 @@ def mutate_gene(
         clamp(a + rng.randint(-delta, delta), 0, 255),
     )
 
-    min_x, max_x_bound, min_y, max_y_bound = bounds
-    dx = int((max_x_bound - min_x) * strength)
-    dy = int((max_y_bound - min_y) * strength)
+    min_x, max_x, min_y, max_y = bounds
+    dx = int((max_x - min_x) * strength)
+    dy = int((max_y - min_y) * strength)
     vertices = tuple(
         (
-            clamp(vx + rng.randint(-dx, dx), min_x, max_x_bound - 1),
-            clamp(vy + rng.randint(-dy, dy), min_y, max_y_bound - 1),
+            clamp(vx + rng.randint(-dx, dx), min_x, max_x - 1),
+            clamp(vy + rng.randint(-dy, dy), min_y, max_y - 1),
         )
         for vx, vy in gene.vertices
     )
