@@ -6,13 +6,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from io import BytesIO
 
-import numpy as np
 from PIL import Image
 
 from utils.stop_conditions import StopCondition
-from survival_strategies.common import SurvivalStrategy, evaluate_population_fitness
+from survival_strategies.common import FitnessFn, PopulationEvaluator, SurvivalStrategy
 from utils.genetic import Individual, random_triangle, get_overflow_bounds
-from utils.image import create_phenotype_image, save_phenotype_image
+from utils.image import save_phenotype_image, visible_array_to_image
 
 
 @dataclass
@@ -24,7 +23,6 @@ class GAResult:
 
 Selector = Callable[[list[Individual], list[float], int, random.Random], list[Individual]]
 Crossover = Callable[[Individual, Individual, random.Random], tuple[Individual, Individual]]
-FitnessFn = Callable[[np.ndarray, Image.Image], float]
 MutationFn = Callable[[Individual, tuple[int, int, int, int], random.Random, float, float], Individual]
 
 
@@ -115,10 +113,10 @@ def run_genetic_algorithm(
     """Run the genetic algorithm and return the best result and metrics."""
 
     width, height = source_image.size
-    source_array = np.asarray(source_image.convert("RGBA"), dtype=np.int16)
     bounds = get_overflow_bounds(width, height)
     rng = random.Random()
     population = generate_initial_population(population_size, num_triangles, width, height, rng)
+    evaluator = PopulationEvaluator(source_image, (width, height), fitness_fn)
 
     if snapshot_interval > 0:
         os.makedirs(output_dir, exist_ok=True)
@@ -128,7 +126,7 @@ def run_genetic_algorithm(
     generations_run = generations
 
     for gen in range(generations):
-        fitness_scores = evaluate_population_fitness(population, source_array, (width, height), fitness_fn)
+        fitness_scores = evaluator.evaluate_population(population)
 
         gen_best_idx = fitness_scores.index(max(fitness_scores))
         gen_best_score = fitness_scores[gen_best_idx]
@@ -158,15 +156,13 @@ def run_genetic_algorithm(
             population,
             fitness_scores,
             offspring,
-            source_array,
-            (width, height),
-            fitness_fn,
+            evaluator,
             selector,
             population_size,
             rng,
         )
 
-    final_image = create_phenotype_image(best_individual, image_size=(width, height))
+    final_image = visible_array_to_image(evaluator.render(best_individual))
     buf = BytesIO()
     final_image.save(buf, format="PNG")
     return GAResult(image_bytes=buf.getvalue(), best_fitness=best_score, generations_run=generations_run)

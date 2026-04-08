@@ -1,9 +1,24 @@
 from __future__ import annotations
 
 import os
+import numpy as np
 from PIL import Image, ImageDraw
 
 from .genetic import Color, Gene
+
+
+def render_individual_visible_array(
+    genes: list[Gene],
+    image_size: tuple[int, int],
+    background: Color = (255, 255, 255, 255),
+) -> np.ndarray:
+    return np.ascontiguousarray(
+        np.asarray(create_phenotype_image(genes, image_size=image_size, background=background), dtype=np.uint8)
+    )
+
+
+def visible_array_to_image(array: np.ndarray) -> Image.Image:
+    return Image.fromarray(array, "RGB")
 
 
 def create_phenotype_image(
@@ -11,10 +26,12 @@ def create_phenotype_image(
     image_size: tuple[int, int],
     background: Color = (255, 255, 255, 255),
 ) -> Image.Image:
-    canvas = Image.new("RGBA", image_size, background)
+    canvas = Image.new("RGB", image_size, background[:3])
     draw = ImageDraw.Draw(canvas, "RGBA")
 
     for gene in genes:
+        if gene.color[3] <= 0:
+            continue
         draw.polygon(gene.vertices, fill=gene.color)
 
     return canvas

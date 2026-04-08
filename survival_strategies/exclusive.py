@@ -2,20 +2,16 @@ from __future__ import annotations
 
 import random
 
-import numpy as np
-
 from utils.genetic import Individual
 
-from .common import FitnessFn, Selector, evaluate_population_fitness
+from .common import PopulationEvaluator, Selector
 
 
 def exclusive_survival(
     population: list[Individual],
     population_fitness: list[float],
     offspring: list[Individual],
-    source_array: np.ndarray,
-    image_size: tuple[int, int],
-    fitness_fn: FitnessFn,
+    evaluator: PopulationEvaluator,
     selector: Selector,
     population_size: int,
     rng: random.Random,
@@ -24,7 +20,7 @@ def exclusive_survival(
     offspring_count = len(offspring)
 
     if offspring_count > population_size:
-        offspring_fitness = evaluate_population_fitness(offspring, source_array, image_size, fitness_fn)
+        offspring_fitness = evaluator.evaluate_population(offspring)
         return selector(offspring, offspring_fitness, population_size, rng)
 
     if offspring_count == population_size:
