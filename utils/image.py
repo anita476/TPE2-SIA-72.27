@@ -12,9 +12,9 @@ def render_individual_visible_array(
     image_size: tuple[int, int],
     background: Color = (255, 255, 255, 255),
 ) -> np.ndarray:
-    return np.ascontiguousarray(
-        np.asarray(create_phenotype_image(genes, image_size=image_size, background=background), dtype=np.uint8)
-    )
+    canvas = create_phenotype_image(genes, image_size=image_size, background=background)
+    array = np.asarray(canvas, dtype=np.uint8)
+    return array if array.flags.c_contiguous else np.ascontiguousarray(array)
 
 
 def visible_array_to_image(array: np.ndarray) -> Image.Image:

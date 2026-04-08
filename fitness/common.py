@@ -13,18 +13,10 @@ def image_to_visible_rgb_u8(image: Image.Image) -> np.ndarray:
 
 
 def mean_absolute_error_rgb_u8(source_array: np.ndarray, candidate_array: np.ndarray) -> float:
-    diff = np.subtract(
-        source_array.astype(np.uint8, copy=False),
-        candidate_array.astype(np.uint8, copy=False),
-        dtype=np.int16,
-    )
+    diff = np.subtract(source_array, candidate_array, dtype=np.int16)
     return float(np.mean(np.abs(diff), dtype=np.float32))
 
 
 def mean_squared_error_rgb_u8(source_array: np.ndarray, candidate_array: np.ndarray) -> float:
-    diff = np.subtract(
-        source_array.astype(np.uint8, copy=False),
-        candidate_array.astype(np.uint8, copy=False),
-        dtype=np.int16,
-    )
+    diff = np.subtract(source_array, candidate_array, dtype=np.int16)
     return float(np.mean(np.square(diff, dtype=np.int32), dtype=np.float32))
