@@ -15,11 +15,15 @@ def roulette_selection(
 ) -> list[Individual]:
     """Select K individuals using fitness-proportionate (roulette wheel) selection.
 
-    Lower MAE translates to higher selection probability.
+    Higher fitness translates to higher selection probability.
     Each of the K selections draws an independent uniform random number.
     """
-    weights = [1.0 / (f + _EPSILON) for f in fitness_scores]
+    weights = [max(f, 0.0) for f in fitness_scores]
     total = sum(weights)
+    if total <= _EPSILON:
+        weights = [1.0 for _ in fitness_scores]
+        total = float(len(weights))
+
     cumulative = []
     acc = 0.0
     for w in weights:

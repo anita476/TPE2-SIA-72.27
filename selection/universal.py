@@ -19,8 +19,12 @@ def universal_selection(
     K equally-spaced pointers r_j = (r + j) / K to traverse the CDF once,
     reducing selection variance compared to independent roulette spins.
     """
-    weights = [1.0 / (f + _EPSILON) for f in fitness_scores]
+    weights = [max(f, 0.0) for f in fitness_scores]
     total = sum(weights)
+    if total <= _EPSILON:
+        weights = [1.0 for _ in fitness_scores]
+        total = float(len(weights))
+
     cumulative = []
     acc = 0.0
     for w in weights:
