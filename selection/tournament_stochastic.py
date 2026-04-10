@@ -21,9 +21,9 @@ def tournament_stochastic(
     for _ in range(k):
         contenders_idx = rng.sample(range(len(population)), subset_num)
 
-        # reverse is fall bc we need creciente
+        # reverse is true bc now fitness higher = better
         fittest_idx, weakest_idx = sorted(
-            contenders_idx, key=lambda idx: fitness_scores[idx], reverse=False
+            contenders_idx, key=lambda idx: fitness_scores[idx], reverse=True
         )
         r = rng.random()  # U[0, 1)
         winner_idx = fittest_idx if r < threshold else weakest_idx

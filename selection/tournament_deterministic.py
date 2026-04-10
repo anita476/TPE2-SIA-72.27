@@ -18,8 +18,8 @@ def tournament_deterministic(
     for _ in range(k):
         contenders_idx = rng.sample(range(len(population)), subset_num)
 
-        #  index with the best  fitness score is chosen -> because its distance lower is better
-        winner_idx = min(contenders_idx, key=lambda idx: fitness_scores[idx])
+        #  index with the best  fitness score is chosen -> now its higher = better
+        winner_idx = max(contenders_idx, key=lambda idx: fitness_scores[idx])
 
         selected.append(population[winner_idx])
 
