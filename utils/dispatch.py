@@ -6,7 +6,9 @@ from crossovers.two_point import two_point_crossover as two_point
 from crossovers.uniform import uniform_crossover as uniform
 from fitness.mae import mae_fitness
 from fitness.mse import mse_fitness
+from fitness.mse5 import mse5_fitness
 from fitness.rmse import rmse_fitness
+from fitness.rmse5 import rmse5_fitness
 from mutations.complete import complete_mutation
 from mutations.gen import gen_mutation
 from mutations.multigen_limited import multigen_limited_mutation
@@ -33,6 +35,8 @@ FITNESS_MAP = {
     "mae":  mae_fitness,
     "mse":  mse_fitness,
     "rmse": rmse_fitness,
+    "mse5": mse5_fitness,
+    "rmse5": rmse5_fitness,
 }
 
 MUTATION_MAP = {
