@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from crossovers.annular import annular_crossover as annular
 from crossovers.one_point import one_point_crossover as one_point
 from crossovers.two_point import two_point_crossover as two_point
+from crossovers.uniform import uniform_crossover as uniform
 from fitness.mae import mae_fitness
 from fitness.mse import mse_fitness
 from fitness.rmse import rmse_fitness
@@ -21,8 +23,10 @@ from survival_strategies.exclusive import exclusive_survival as exclusive
 from utils.stop_conditions import StopCondition, any_of, no_improvement, target_fitness, time_limit
 
 CROSSOVER_MAP = {
+    "annular": annular,
     "one_point": one_point,
     "two_point": two_point,
+    "uniform": uniform,
 }
 
 FITNESS_MAP = {
