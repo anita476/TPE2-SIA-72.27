@@ -217,3 +217,5 @@ results.csv
 output
 results.json
 /plots/
+
+**/*.png

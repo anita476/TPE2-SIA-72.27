@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from math import ceil
 import random
 
 from utils.genetic import Individual
@@ -18,7 +19,7 @@ def annular_crossover(
         return list(parent1), list(parent2)
 
     start = rng.randint(0, length_parent1 - 1)
-    segment_length = rng.randint(0, length_parent1 // 2)
+    segment_length = rng.randint(0, ceil(length_parent1 / 2))
 
     child1 = list(parent1)
     child2 = list(parent2)

@@ -10,7 +10,7 @@
   },
   "grid": {
     "selector":          ["elite", "roulette", "universal", "boltzmann"],
-    "crossover":         ["one_point", "two_point"],
+    "crossover":         ["annular", "one_point", "two_point", "uniform"],
     "fitness":           ["mae", "mse"],
     "survival_strategy": ["additive", "exclusive"],
     "population_size":   [50, 100],
