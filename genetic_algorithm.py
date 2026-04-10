@@ -109,12 +109,13 @@ def run_genetic_algorithm(
     survival_strategy: SurvivalStrategy,
     mutation_fn: MutationFn,
     stop_condition: StopCondition | None = None,
+    seed: int | None = None,
 ) -> GAResult:
     """Run the genetic algorithm and return the best result and metrics."""
 
     width, height = source_image.size
     bounds = get_overflow_bounds(width, height)
-    rng = random.Random()
+    rng = random.Random(seed)
     population = generate_initial_population(population_size, num_triangles, width, height, rng)
     evaluator = PopulationEvaluator(source_image, (width, height), fitness_fn)
 

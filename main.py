@@ -35,6 +35,7 @@ def main():
         mutation_strength=args.mutation_strength,
         snapshot_interval=args.snapshot_interval,
         output_dir=args.output_dir,
+        seed=args.seed,
         stop_condition=build_stop_condition(
             args.target_fitness,
             args.convergence_window,

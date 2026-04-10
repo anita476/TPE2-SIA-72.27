@@ -32,6 +32,7 @@ def parse_arguments() -> argparse.Namespace:
     argument_parser.add_argument("--k", type=int, default=None, help="Number of selected parents and offspring generated per generation")
     argument_parser.add_argument("--mutation-rate", type=float, default=0.1, help="Probability of mutating each triangle (0.0 to 1.0)")
     argument_parser.add_argument("--mutation-strength", type=float, default=0.3, help="Magnitude of each mutation (0.0 to 1.0)")
+    argument_parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducible runs")
     argument_parser.add_argument("--snapshot-interval", type=int, default=0, help="Save snapshot every N generations (0=disabled)")
     argument_parser.add_argument("--output-dir", type=str, default="snapshots", help="Directory for snapshot images")
     argument_parser.add_argument("--selector", type=str, default="elite", choices=["elite", "roulette", "universal", "ranking", "boltzmann", "tournament_det", "tournament_stoch"], help="Selection method")
