@@ -212,3 +212,8 @@ __marimo__/
 /snapshots_hq/
 CLAUDE.md
 results.csv
+
+/plots/
+output
+results.json
+/plots/

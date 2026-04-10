@@ -6,6 +6,7 @@ def tournament_stochastic(
         fitness_scores: list[float],
         k: int,
         rng: random.Random,
+        threshold: float = 0.5,
 ) -> list[Individual]:
     """
     Se elige un Threshold de [0.5,1].
@@ -16,7 +17,6 @@ def tournament_stochastic(
     """
     subset_num = 2
     selected = []
-    threshold = 0.5 # @todo
 
     for _ in range(k):
         contenders_idx = rng.sample(range(len(population)), subset_num)

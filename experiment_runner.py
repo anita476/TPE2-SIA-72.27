@@ -79,6 +79,7 @@ def run_experiments(grid_config_path: str, output_csv: str, save_images: bool) -
                     merged.get("temperature", 50.0),
                     merged.get("temperature_min", 1.0),
                     merged.get("temperature_decay", -0.005),
+                    merged.get("tournament_threshold", 0.5),
                 ),
                 crossover=CROSSOVER_MAP[merged["crossover"]],
                 fitness_fn=FITNESS_MAP[merged["fitness"]],

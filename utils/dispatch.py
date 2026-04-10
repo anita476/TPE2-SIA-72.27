@@ -52,7 +52,7 @@ SURVIVAL_MAP = {
 }
 
 
-def build_selector(name: str, temperature: float, temperature_min: float, temperature_decay: float):
+def build_selector(name: str, temperature: float, temperature_min: float, temperature_decay: float, tournament_threshold: float = 0.5):
     selector_map = {
         "elite":            elite,
         "roulette":         roulette,
@@ -60,7 +60,7 @@ def build_selector(name: str, temperature: float, temperature_min: float, temper
         "ranking":          ranking,
         "boltzmann":        AnnealedBoltzmann(temperature, temperature_min, temperature_decay),
         "tournament_det":   tournament_deterministic,
-        "tournament_stoch": tournament_stochastic,
+        "tournament_stoch": lambda population, fitness_scores, k, rng: tournament_stochastic(population, fitness_scores, k, rng, tournament_threshold),
     }
     return selector_map[name]
 

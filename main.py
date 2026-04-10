@@ -26,7 +26,7 @@ def main():
         population_size=args.population_size,
         generations=args.generations,
         k=args.k,
-        selector=build_selector(args.selector, args.temperature, args.temperature_min, args.temperature_decay),
+        selector=build_selector(args.selector, args.temperature, args.temperature_min, args.temperature_decay, args.tournament_threshold),
         crossover=CROSSOVER_MAP[args.crossover],
         fitness_fn=FITNESS_MAP[args.fitness],
         survival_strategy=SURVIVAL_MAP[args.survival_strategy],
