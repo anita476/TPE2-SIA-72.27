@@ -32,6 +32,7 @@ import itertools
 import json
 import os
 import sys
+import time
 from io import BytesIO
 
 from PIL import Image
@@ -59,7 +60,7 @@ def run_experiments(grid_config_path: str, output_csv: str, save_images: bool) -
 
     os.makedirs(os.path.dirname(output_csv) or ".", exist_ok=True)
     with open(output_csv, "w", newline="") as csvfile:
-        fieldnames = keys + ["best_fitness", "generations_run"]
+        fieldnames = keys + ["best_fitness", "generations_run", "elapsed_seconds"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -68,6 +69,7 @@ def run_experiments(grid_config_path: str, output_csv: str, save_images: bool) -
             merged = {**base, **params}
             print(f"[{i + 1}/{total}] {params}")
 
+            t0 = time.perf_counter()
             result = run_genetic_algorithm(
                 source_image=source_image,
                 num_triangles=merged["triangles"],
@@ -96,8 +98,14 @@ def run_experiments(grid_config_path: str, output_csv: str, save_images: bool) -
                     merged.get("time_limit"),
                 ),
             )
+            elapsed = round(time.perf_counter() - t0, 4)
 
-            row = {**params, "best_fitness": result.best_fitness, "generations_run": result.generations_run}
+            row = {
+                **params,
+                "best_fitness": result.best_fitness,
+                "generations_run": result.generations_run,
+                "elapsed_seconds": elapsed,
+            }
             writer.writerow(row)
             csvfile.flush()
 
@@ -108,7 +116,11 @@ def run_experiments(grid_config_path: str, output_csv: str, save_images: bool) -
                 with open(image_path, "wb") as f:
                     f.write(result.image_bytes)
 
-            print(f"    best_fitness={result.best_fitness:.4f}  generations_run={result.generations_run}\n")
+            print(
+                f"    best_fitness={result.best_fitness:.4f}  "
+                f"generations_run={result.generations_run}  "
+                f"elapsed={elapsed:.2f}s\n"
+            )
 
     print(f"Results saved to {output_csv}")
 

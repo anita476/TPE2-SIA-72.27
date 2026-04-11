@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from crossovers.annular import annular_crossover as annular
 from crossovers.one_point import one_point_crossover as one_point
+from crossovers.swapper import swapper_crossover as swapper
 from crossovers.two_point import two_point_crossover as two_point
 from crossovers.uniform import uniform_crossover as uniform
 from fitness.mae import mae_fitness
@@ -27,6 +28,7 @@ from utils.stop_conditions import StopCondition, any_of, no_improvement, target_
 CROSSOVER_MAP = {
     "annular": annular,
     "one_point": one_point,
+    "swapper": swapper,
     "two_point": two_point,
     "uniform": uniform,
 }

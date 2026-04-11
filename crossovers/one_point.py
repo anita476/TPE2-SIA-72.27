@@ -13,7 +13,7 @@ def one_point_crossover(
     """Perform one-point crossover between two parent individuals to produce two child individuals."""
     length = len(parent1)
 
-    pt = rng.randint(1, length - 1)
+    pt = rng.randint(0, length - 1)
     child1 = parent1[:pt] + parent2[pt:]
     child2 = parent2[:pt] + parent1[pt:]
     return child1, child2

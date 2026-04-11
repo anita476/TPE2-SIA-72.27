@@ -18,7 +18,7 @@ def two_point_crossover(
     if length < 3:
         return one_point_crossover(parent1, parent2, rng)
 
-    pt1, pt2 = sorted(rng.sample(range(1, length), 2))
+    pt1, pt2 = sorted(rng.sample(range(length), 2))
     child1 = parent1[:pt1] + parent2[pt1:pt2] + parent1[pt2:]
     child2 = parent2[:pt1] + parent1[pt1:pt2] + parent2[pt2:]
     return child1, child2
