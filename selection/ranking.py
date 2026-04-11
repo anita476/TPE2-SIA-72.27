@@ -16,8 +16,8 @@ def ranking(
     """
     n = len(population)
 
-    # lower fitness score = better = lower rank index
-    sorted_indices = sorted(range(n), key=lambda i: fitness_scores[i])
+    # higher fitness = better = lower rank index = higher weight
+    sorted_indices = sorted(range(n), key=lambda i: fitness_scores[i], reverse=True)
 
     ranks = [0] * n
     for j, ind in enumerate(sorted_indices):
