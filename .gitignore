@@ -219,3 +219,4 @@ results.json
 /plots/
 
 **/*.png
+.DS_Store

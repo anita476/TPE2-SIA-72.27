@@ -47,10 +47,8 @@ def run_threshold_analysis(
     fitness: str = "rmse5",
     survival_strategy: str = "exclusive",
     mutation: str = "multigen_limited",
-    mutation_rate: float = 0.1,
-    mutation_strength: float = 0.3,
-    convergence_window: int = 20,
-    convergence_delta: float = 1e-4,
+    mutation_rate: float = 0.22,
+    mutation_strength: float = 0.28,
     output_dir: str = "output/threshold_analysis",
 ) -> None:
     """Run GA experiments with varying stochastic tournament thresholds."""
@@ -137,8 +135,8 @@ def run_threshold_analysis(
                     output_dir=output_dir,
                     stop_condition=build_stop_condition(
                         target_fitness_val=None,
-                        convergence_window=convergence_window,
-                        convergence_delta=convergence_delta,
+                        convergence_window=None,
+                        convergence_delta=None,
                         time_limit_secs=None,
                     ),
                 )
@@ -480,24 +478,17 @@ def main():
     parser.add_argument("--num-thresholds", type=int, default=10, help="Number of thresholds to test (default: 10)")
     parser.add_argument("--triangles", type=int, default=200, help="Number of triangles (default: 200)")
     parser.add_argument("--population-size", type=int, default=100, help="Population size (default: 100)")
-    parser.add_argument("--generations", type=int, default=500, help="Max generations (default: 500)")
+    parser.add_argument("--generations", type=int, default=1000, help="Max generations (default: 1000)")
     parser.add_argument("--k", type=int, default=40, help="Offspring size (default: 40)")
     parser.add_argument("--crossover", type=str, default="annular", choices=["annular", "one_point", "two_point", "uniform"], help="Crossover operator (default: annular)")
     parser.add_argument("--fitness", type=str, default="rmse5", choices=["mae", "mse", "rmse", "mse5", "rmse5"], help="Fitness function (default: rmse5)")
     parser.add_argument("--survival-strategy", type=str, default="exclusive", choices=["additive", "exclusive"], help="Survival strategy (default: exclusive)")
     parser.add_argument("--mutation", type=str, default="multigen_limited", choices=["gen", "multigen_limited", "multigen_uniform", "complete"], help="Mutation operator (default: multigen_limited)")
-    parser.add_argument("--mutation-rate", type=float, default=0.1, help="Mutation rate (default: 0.1)")
-    parser.add_argument("--mutation-strength", type=float, default=0.3, help="Mutation strength (default: 0.3)")
-    parser.add_argument("--convergence-window", type=int, default=20, help="Convergence window for no_improvement (default: 20)")
-    parser.add_argument("--convergence-delta", type=float, default=1e-4, help="Convergence delta for no_improvement (default: 1e-4)")
+    parser.add_argument("--mutation-rate", type=float, default=0.22, help="Mutation rate (default: 0.1)")
+    parser.add_argument("--mutation-strength", type=float, default=0.28, help="Mutation strength (default: 0.3)")
     parser.add_argument("--output-dir", type=str, default="output/threshold_analysis", help="Output directory (default: output/threshold_analysis)")
     
     args = parser.parse_args()
-    
-    # Validate threshold range
-    if not (0.5 <= args.convergence_delta < 1.0):  # This is checking delta, not threshold, but it's a sanity check
-        print("Warning: convergence_delta should typically be small (< 1.0)")
-    
     run_threshold_analysis(
         input_image_path=args.input_image,
         num_runs=args.num_runs,
@@ -512,8 +503,6 @@ def main():
         mutation=args.mutation,
         mutation_rate=args.mutation_rate,
         mutation_strength=args.mutation_strength,
-        convergence_window=args.convergence_window,
-        convergence_delta=args.convergence_delta,
         output_dir=args.output_dir,
     )
 
