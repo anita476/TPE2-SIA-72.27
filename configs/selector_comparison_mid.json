@@ -1,0 +1,31 @@
+{
+  "base": {
+    "input_image": "input/germany.png",
+    "triangles": 350,
+    "population_size": 200,
+    "k": 80,
+    "mutation_rate": 0.1,
+    "mutation_strength": 0.3,
+    "mutation": "multigen_limited",
+    "crossover": "annular",
+    "survival_strategy": "exclusive",
+    "convergence_window": 100,
+    "convergence_delta": 0.01,
+    "output_dir": "output/selector_comparison_mid",
+    "snapshot_interval": 0
+  },
+  "grid": {
+    "selector": [
+      "elite",
+      "roulette",
+      "universal",
+      "ranking",
+      "boltzmann",
+      "tournament_det",
+      "tournament_stoch"
+    ],
+    "fitness": ["rmse5"],
+    "generations": [500],
+    "seed": [1, 2, 3, 4, 5]
+  }
+}
