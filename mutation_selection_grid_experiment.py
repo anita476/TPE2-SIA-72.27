@@ -109,7 +109,6 @@ def _run_single_ga_worker(
             "mutation": mutation,
             "run_idx": run_idx,
             "best_fitness": result.best_fitness,
-            "worst_fitness": result.worst_fitness,
             "generations": result.generations_run,
             "elapsed_time": elapsed_time,
             "success": True,
@@ -121,7 +120,6 @@ def _run_single_ga_worker(
             "mutation": mutation,
             "run_idx": run_idx,
             "best_fitness": None,
-            "worst_fitness": None,
             "generations": None,
             "elapsed_time": None,
             "success": False,
@@ -193,8 +191,6 @@ def run_grid_experiment(
         "statistics": {
             "avg_best_fitness": {},
             "std_best_fitness": {},
-            "avg_worst_fitness": {},
-            "std_worst_fitness": {},
             "avg_generations": {},
             "std_generations": {},
         }
