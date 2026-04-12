@@ -1,0 +1,15 @@
+{
+  "input_image": "input/Flag_of_France.svg.png",
+  "num_runs": 5,
+  "triangles": 200,
+  "population_size": 100,
+  "generations": 500,
+  "k": 40,
+  "crossover": "annular",
+  "fitness": "rmse5",
+  "survival_strategy": "exclusive",
+  "mutation_rate": 0.22,
+  "mutation_strength": 0.28,
+  "convergence_window": 20,
+  "output": "output/mutation_selection_grid"
+}
