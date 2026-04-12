@@ -1,0 +1,23 @@
+{
+  "base": {
+    "input_image": "input/night.jpg",
+    "triangles": 1000,
+    "population_size": 500,
+    "k": 250,
+    "mutation_rate": 0.15,
+    "mutation_strength": 0.1,
+    "mutation": "multigen_limited",
+    "crossover": "uniform",
+    "survival_strategy": "additive",
+    "convergence_window": 3000,
+    "convergence_delta": 0.0001,
+    "output_dir": "output/ultra_high",
+    "snapshot_interval": 50
+  },
+  "grid": {
+    "selector": ["elite"],
+    "fitness": ["rmse5"],
+    "generations": [100000],
+    "seed": [1]
+  }
+}

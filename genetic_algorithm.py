@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import random
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from io import BytesIO
@@ -19,6 +20,8 @@ class GAResult:
     image_bytes: bytes
     best_fitness: float
     generations_run: int
+    fitness_history: list[float]
+    time_history: list[float]
 
 
 Selector = Callable[[list[Individual], list[float], int, random.Random], list[Individual]]
@@ -110,6 +113,7 @@ def run_genetic_algorithm(
     mutation_fn: MutationFn,
     stop_condition: StopCondition | None = None,
     seed: int | None = None,
+    verbose: bool = True,
 ) -> GAResult:
     """Run the genetic algorithm and return the best result and metrics."""
 
@@ -125,6 +129,9 @@ def run_genetic_algorithm(
     best_individual = population[0]
     best_score = 0.0
     generations_run = generations
+    fitness_history: list[float] = []
+    time_history: list[float] = []
+    t_start = time.perf_counter()
 
     for gen in range(generations):
         fitness_scores = evaluator.evaluate_population(population)
@@ -136,9 +143,13 @@ def run_genetic_algorithm(
             best_score = gen_best_score
             best_individual = population[gen_best_idx]
 
-        print(
-            f"Generation {gen + 1}/{generations} | Best fitness ({fitness_fn.__name__}): {best_score:.4f}"
-        )
+        fitness_history.append(best_score)
+        time_history.append(round(time.perf_counter() - t_start, 4))
+
+        if verbose:
+            print(
+                f"Generation {gen + 1}/{generations} | Best fitness ({fitness_fn.__name__}): {best_score:.4f}"
+            )
 
         if stop_condition and stop_condition(gen, best_score, fitness_scores):
             print(f"Stop condition met at generation {gen + 1}.")
@@ -166,4 +177,10 @@ def run_genetic_algorithm(
     final_image = visible_array_to_image(evaluator.render(best_individual))
     buf = BytesIO()
     final_image.save(buf, format="PNG")
-    return GAResult(image_bytes=buf.getvalue(), best_fitness=best_score, generations_run=generations_run)
+    return GAResult(
+        image_bytes=buf.getvalue(),
+        best_fitness=best_score,
+        generations_run=generations_run,
+        fitness_history=fitness_history,
+        time_history=time_history,
+    )

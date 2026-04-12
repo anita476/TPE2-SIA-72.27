@@ -635,10 +635,10 @@ def plot_pairwise_comparison(
     fig_h = FIG_SIZE[1]
 
     with plt.rc_context(PLOT_RC):
-        fig, ax = plt.subplots(figsize=(8.0, fig_h), dpi=FIG_DPI)
+        fig, ax = plt.subplots(figsize=(5.5, fig_h), dpi=FIG_DPI)
     _setup_axes_style(fig, ax)
 
-    positions = [1, 2]
+    positions = [1, 1.6]
     data = [data_a, data_b]
     colors = PAIRWISE_COLORS
 
@@ -671,28 +671,9 @@ def plot_pairwise_comparison(
     if show_mean:
         _add_mean_markers(ax, positions, data)
 
-    # Statistical test annotation
-    pvalue = mannwhitney_pvalue(data_a, data_b)
-    if pvalue is not None:
-        stars = pvalue_stars(pvalue)
-        y_top = max(
-            (max(d) if d else 0.0) for d in data
-        )
-        all_vals = [v for d in data for v in d]
-        y_range = (max(all_vals) - min(all_vals)) if all_vals else 1.0
-        bar_y = y_top + y_range * 0.08
-        ax.annotate(
-            "",
-            xy=(2, bar_y),
-            xytext=(1, bar_y),
-            arrowprops=dict(arrowstyle="-", color="#343434", lw=1.2),
-        )
-        pval_label = f"p={pvalue:.4f} {stars}" if pvalue >= 0.0001 else f"p<0.0001 {stars}"
-        ax.text(1.5, bar_y + y_range * 0.015, pval_label,
-                ha="center", va="bottom", fontsize=8.5, color="#343434", fontweight="500")
-
     ax.set_xticks(positions)
     ax.set_xticklabels([label_a, label_b], rotation=20, ha="right")
+    ax.set_xlim(min(positions) - 0.5, max(positions) + 0.5)
     if xlabel:
         ax.set_xlabel(xlabel, color=STYLE["text_axis"])
     ax.set_ylabel(ylabel, color=STYLE["text_axis"])
@@ -732,8 +713,354 @@ def plot_pairwise_comparison(
 
 
 # ---------------------------------------------------------------------------
-# Strata (split by fitness function when multiple are present)
+# Scatter plot: generations_run vs efficiency metric, coloured by param
 # ---------------------------------------------------------------------------
+
+# Colour palette for up to 10 groups (selector-level colours)
+_SCATTER_PALETTE = [
+    "#4a90d9", "#e67e22", "#27ae60", "#c0392b", "#8e44ad",
+    "#16a085", "#d35400", "#2980b9", "#f39c12", "#7f8c8d",
+]
+
+
+def _normalise_data(data: list[list[float]]) -> list[list[float]]:
+    """Min-max normalise each value across all groups to [0, 1]."""
+    all_vals = [v for d in data for v in d]
+    if not all_vals:
+        return data
+    mn, mx = min(all_vals), max(all_vals)
+    rng = mx - mn or 1.0
+    return [[(v - mn) / rng for v in d] for d in data]
+
+
+def plot_dual_boxplot(
+    data_left: list[list[float]],
+    data_right: list[list[float]],
+    labels: list[str],
+    metric_left: str,
+    metric_right: str,
+    title: str,
+) -> plt.Figure:
+    """Grouped boxplot: for each category, two boxes side by side (one per metric).
+    Both metrics are normalised to [0, 1] so they share the same Y axis.
+    """
+    n = len(labels)
+    fig_w = max(11.0, 1.2 * n + 3.0)
+
+    with plt.rc_context(PLOT_RC):
+        fig, ax = plt.subplots(figsize=(fig_w, FIG_SIZE[1]), dpi=FIG_DPI)
+    _setup_axes_style(fig, ax)
+
+    norm_l = _normalise_data(data_left)
+    norm_r = _normalise_data(data_right)
+
+    gap = 0.28      # half-distance between the two boxes of the same group
+    width = 0.24
+
+    color_l = "#4a90d9"
+    edge_l  = "#2c6cb0"
+    color_r = "#e67e22"
+    edge_r  = "#c45f1a"
+
+    group_centers = list(range(1, n + 1))
+    pos_l = [c - gap for c in group_centers]
+    pos_r = [c + gap for c in group_centers]
+
+    rng = np.random.default_rng(42)
+
+    for pos_list, data, fc, ec in (
+        (pos_l, norm_l, color_l, edge_l),
+        (pos_r, norm_r, color_r, edge_r),
+    ):
+        valid = [(p, d) for p, d in zip(pos_list, data) if d]
+        if not valid:
+            continue
+        bp = ax.boxplot(
+            [d for _, d in valid],
+            positions=[p for p, _ in valid],
+            widths=width,
+            patch_artist=True,
+            showfliers=False,
+            zorder=2,
+        )
+        _apply_boxplot_style(bp, face_color=fc, edge_color=ec)
+        _add_jitter(ax, [p for p, _ in valid], [d for _, d in valid], rng,
+                    color=fc, edge_color=ec)
+
+    # X-axis: group labels at center positions
+    ax.set_xticks(group_centers)
+    ax.set_xticklabels(labels, rotation=35, ha="right")
+    ax.set_xlim(0.4, n + 0.6)
+    ax.set_ylabel("Valor normalizado [0 → 1]", color=STYLE["text_axis"])
+    ax.yaxis.set_major_formatter(StrMethodFormatter("{x:.2f}"))
+
+    # Thin vertical separators between groups
+    for c in group_centers[:-1]:
+        ax.axvline(c + 0.5, color=STYLE["grid"], linewidth=0.5,
+                   linestyle=":", alpha=0.6, zorder=0)
+
+    legend_handles = [
+        Line2D([0], [0], color=BOXPLOT_STYLE["median_color"],
+               linewidth=1.8, label="Mediana"),
+    ]
+    ax.legend(handles=legend_handles, loc="upper right", fontsize=8,
+              framealpha=0.85, edgecolor=STYLE["grid"])
+
+    ax.set_title(title, fontsize=13, fontweight="600",
+                 color=STYLE["text_title"], pad=14)
+    fig.subplots_adjust(left=0.09, right=0.97, top=0.88, bottom=0.22)
+    return fig
+
+
+def plot_scatter_efficiency(
+    rows: list[dict[str, str]],
+    param: str,
+    x_metric: str,
+    y_metric: str,
+    title: str,
+    stratum_value: str | None = None,
+) -> plt.Figure:
+    """Cleveland dot plot: one row per group, two dots per row (x and y metric,
+    both normalised to [0,1]). Rows sorted by y_metric descending.
+    Raw mean values printed next to each dot.
+    """
+    groups: dict[str, tuple[list[float], list[float]]] = {}
+    for r in rows:
+        key = r.get(param)
+        if not key:
+            continue
+        xv = parse_float_cell(r.get(x_metric))
+        yv = parse_float_cell(r.get(y_metric))
+        if xv is None or yv is None:
+            continue
+        if key not in groups:
+            groups[key] = ([], [])
+        groups[key][0].append(xv)
+        groups[key][1].append(yv)
+
+    labels = sort_category_labels(list(groups.keys()))
+    means_x = {lb: float(np.mean(groups[lb][0])) for lb in labels if groups[lb][0]}
+    means_y = {lb: float(np.mean(groups[lb][1])) for lb in labels if groups[lb][1]}
+    valid = [lb for lb in labels if lb in means_x and lb in means_y]
+    if not valid:
+        with plt.rc_context(PLOT_RC):
+            fig, ax = plt.subplots(figsize=FIG_SIZE, dpi=FIG_DPI)
+        return fig
+
+    # Sort rows by y_metric descending (best efficiency at top)
+    valid.sort(key=lambda lb: means_y[lb], reverse=True)
+
+    # Normalise both metrics to [0, 1]
+    all_x = [means_x[lb] for lb in valid]
+    all_y = [means_y[lb] for lb in valid]
+    min_x, max_x = min(all_x), max(all_x)
+    min_y, max_y = min(all_y), max(all_y)
+    rng_x = max_x - min_x or 1.0
+    rng_y = max_y - min_y or 1.0
+    norm = lambda v, mn, rng: (v - mn) / rng  # noqa: E731
+
+    n = len(valid)
+    fig_h = max(4.0, 0.55 * n + 1.8)
+    with plt.rc_context(PLOT_RC):
+        fig, ax = plt.subplots(figsize=(9.0, fig_h), dpi=FIG_DPI)
+    _setup_axes_style(fig, ax)
+
+    y_positions = list(range(n))
+    x_color = "#4a90d9"
+    y_color = "#e67e22"
+
+    for i, lb in enumerate(valid):
+        ypos = n - 1 - i  # top = best
+
+        nx = norm(means_x[lb], min_x, rng_x)
+        ny = norm(means_y[lb], min_y, rng_y)
+
+        # Connecting segment between the two dots
+        ax.plot([nx, ny], [ypos, ypos], color=STYLE["grid"],
+                linewidth=1.0, zorder=1)
+
+        # x_metric dot
+        ax.scatter(nx, ypos, s=80, color=x_color, edgecolors="white",
+                   linewidths=0.8, zorder=3)
+        ax.text(nx, ypos + 0.28, f"{means_x[lb]:.4g}",
+                ha="center", va="bottom", fontsize=7, color=x_color)
+
+        # y_metric dot
+        ax.scatter(ny, ypos, s=80, marker="D", color=y_color,
+                   edgecolors="white", linewidths=0.8, zorder=3)
+        ax.text(ny, ypos + 0.28, f"{means_y[lb]:.4g}",
+                ha="center", va="bottom", fontsize=7, color=y_color)
+
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(list(reversed(valid)), fontsize=9)
+    ax.set_xlim(-0.08, 1.12)
+    ax.set_ylim(-0.6, n - 0.4)
+    ax.set_xticks([0.0, 0.25, 0.5, 0.75, 1.0])
+    ax.set_xticklabels(["mín", "25%", "50%", "75%", "máx"], fontsize=8,
+                       color=STYLE["text_axis"])
+    ax.set_xlabel("Valor relativo (normalizado al rango del grupo)", fontsize=9,
+                  color=STYLE["text_axis"])
+    ax.grid(axis="x", which="major", linestyle="--", linewidth=0.5,
+            alpha=0.4, color=STYLE["grid"], zorder=0)
+    ax.grid(axis="y", visible=False)
+    ax.tick_params(axis="y", length=0)
+
+    from matplotlib.lines import Line2D  # noqa: PLC0415
+    legend_handles = [
+        Line2D([0], [0], marker="o", color="w", markerfacecolor=x_color,
+               markersize=8, label=metric_ylabel_es(x_metric)),
+        Line2D([0], [0], marker="D", color="w", markerfacecolor=y_color,
+               markersize=8, label=metric_ylabel_es(y_metric)),
+    ]
+    ax.legend(handles=legend_handles, loc="lower right", fontsize=8,
+              framealpha=0.85, edgecolor=STYLE["grid"])
+
+    suffix = f" (función de aptitud: {stratum_value})" if stratum_value else ""
+    ax.set_title(f"{title}{suffix}", fontsize=13, fontweight="600",
+                 color=STYLE["text_title"], pad=14)
+
+    fig.subplots_adjust(left=0.18, right=0.95, top=0.88, bottom=0.12)
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# Convergence curve plot
+# ---------------------------------------------------------------------------
+
+def plot_convergence_curves(
+    history_csv: Path,
+    out_dir: Path,
+    filters: dict[str, list[str]] | None = None,
+    color_by: str = "selector",
+    x_axis: str = "generation",
+    show_seeds: bool = False,
+) -> list[Path]:
+    """Line plot of best_fitness vs generation or elapsed_seconds.
+    Mean across seeds: thick opaque line.
+    Individual seeds: thin semi-transparent lines (only if show_seeds=True).
+    x_axis: 'generation' or 'elapsed_seconds'.
+    """
+    from collections import defaultdict
+
+    rows, fieldnames = load_rows(history_csv)
+    if "best_fitness" not in fieldnames:
+        print("History CSV must have a 'best_fitness' column.")
+        return []
+    if x_axis not in fieldnames:
+        print(f"Column '{x_axis}' not found in history CSV. "
+              f"Available: {fieldnames}")
+        return []
+
+    if filters:
+        rows = apply_filters(rows, filters)
+    if not rows:
+        print("No rows after filtering.")
+        return []
+
+    if color_by not in fieldnames:
+        print(f"Column '{color_by}' not found in history CSV.")
+        return []
+
+    seed_col = "seed" if "seed" in fieldnames else None
+
+    # groups[label][seed] = list of (x_val, fitness)
+    groups: dict[str, dict[str, list[tuple[float, float]]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
+    for r in rows:
+        key = r.get(color_by, "")
+        if not key:
+            continue
+        seed = r.get(seed_col, "0") if seed_col else "0"
+        xv = parse_float_cell(r.get(x_axis))
+        fit = parse_float_cell(r.get("best_fitness"))
+        if xv is None or fit is None:
+            continue
+        groups[key][seed].append((xv, fit))
+
+    labels = sort_category_labels(list(groups.keys()))
+    if not labels:
+        return []
+
+    x_label = "Generación" if x_axis == "generation" else "Tiempo (s)"
+
+    plt.ioff()
+    with plt.rc_context(PLOT_RC):
+        fig, ax = plt.subplots(figsize=FIG_SIZE, dpi=FIG_DPI)
+    _setup_axes_style(fig, ax)
+
+    for i, label in enumerate(labels):
+        color = _SCATTER_PALETTE[i % len(_SCATTER_PALETTE)]
+        seed_data = groups[label]
+        all_series: list[list[tuple[float, float]]] = [
+            sorted(seed_data[s], key=lambda p: p[0]) for s in sorted(seed_data)
+        ]
+
+        if x_axis == "elapsed_seconds":
+            # Interpolate each seed to a common time grid (step function: fitness only increases)
+            x_min = min(pts[0][0] for pts in all_series if pts)
+            x_max = max(pts[-1][0] for pts in all_series if pts)
+            grid = np.linspace(x_min, x_max, 400)
+
+            interp_matrix = []
+            for pts in all_series:
+                xs = np.array([p[0] for p in pts])
+                ys = np.array([p[1] for p in pts])
+                interp_y = np.interp(grid, xs, ys, left=ys[0], right=ys[-1])
+                interp_matrix.append(interp_y)
+                if show_seeds:
+                    ax.plot(grid, interp_y, color=color, linewidth=0.8, alpha=0.25, zorder=2)
+
+            if len(interp_matrix) > 1:
+                mean_fits = np.array(interp_matrix).mean(axis=0)
+                ax.plot(grid, mean_fits, color=color, linewidth=2.2,
+                        alpha=0.95, zorder=4, label=label)
+            else:
+                ax.plot(grid, interp_matrix[0], color=color, linewidth=2.0,
+                        alpha=0.9, zorder=4, label=label)
+        else:
+            # Generation mode: seeds share the same x values, no interpolation needed
+            if show_seeds:
+                for pts in all_series:
+                    ax.plot(
+                        [p[0] for p in pts], [p[1] for p in pts],
+                        color=color, linewidth=0.8, alpha=0.25, zorder=2,
+                    )
+
+            if len(all_series) > 1:
+                x_fitness: dict[float, list[float]] = defaultdict(list)
+                for series in all_series:
+                    for xv, fit in series:
+                        x_fitness[xv].append(fit)
+                mean_xs = sorted(x_fitness)
+                mean_fits_gen = [float(np.mean(x_fitness[xv])) for xv in mean_xs]
+                ax.plot(mean_xs, mean_fits_gen, color=color, linewidth=2.2,
+                        alpha=0.95, zorder=4, label=label)
+            elif all_series:
+                pts = all_series[0]
+                ax.plot([p[0] for p in pts], [p[1] for p in pts],
+                        color=color, linewidth=2.0, alpha=0.9, zorder=4, label=label)
+
+    ax.set_xlabel(x_label, color=STYLE["text_axis"])
+    ax.set_ylabel("Mejor fitness", color=STYLE["text_axis"])
+    ax.legend(
+        title=param_xlabel_es(color_by), fontsize=8, title_fontsize=8,
+        framealpha=0.85, edgecolor=STYLE["grid"], loc="lower right",
+    )
+
+    title = f"Curvas de convergencia por {param_xlabel_es(color_by).lower()}"
+    ax.set_title(title, fontsize=13, fontweight="600",
+                 color=STYLE["text_title"], pad=14)
+    fig.subplots_adjust(left=0.09, right=0.97, top=0.88, bottom=0.12)
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    x_suffix = "_vs_time" if x_axis == "elapsed_seconds" else ""
+    dest = out_dir / f"convergence{x_suffix}_by_{_safe_filename_part(color_by)}.png"
+    save_figure(fig, dest)
+    plt.close(fig)
+    print(f"Saved: {dest}")
+    return [dest]
+
 
 def build_strata(
     rows: list[dict[str, str]],
@@ -773,17 +1100,18 @@ def build_title(
     multi_fitness_grid: bool,
     label_a: str | None = None,
     label_b: str | None = None,
+    n_labels: int = 0,
 ) -> str:
-    if label_a is not None and label_b is not None:
-        base = (
-            f"{param_xlabel_es(param)}: {label_a} vs {label_b}"
-            f" — {metric_ylabel_es(metric)}"
-        )
+    ylabel = metric_ylabel_es(metric)
+    if n_labels == 1 and label_a is not None:
+        # Single group: "<method> — <metric>"
+        base = f"{label_a} — {ylabel}"
+    elif label_a is not None and label_b is not None:
+        # Two groups (pairwise or all-methods with 2): "<A> vs. <B> — <metric>"
+        base = f"{label_a} vs. {label_b} — {ylabel}"
     else:
-        base = (
-            f"Comparación por {param_xlabel_es(param).lower()}"
-            f" — {metric_ylabel_es(metric)}"
-        )
+        # Three or more: "Comparación por <param> — <metric>"
+        base = f"Comparación por {param_xlabel_es(param).lower()} — {ylabel}"
     if multi_fitness_grid and stratum_value is not None:
         base += f" (función de aptitud: {stratum_value})"
     return base
@@ -819,6 +1147,7 @@ def run(
     show_mean: bool = False,
     add_stats: bool = False,
     ci_level: float = 0.95,
+    scatter: bool = False,
 ) -> list[Path]:
     rows, fieldnames = load_rows(csv_path)
     validate_columns(fieldnames)
@@ -859,19 +1188,35 @@ def run(
             labels_all = sort_category_labels(
                 unique_non_null([r.get(param) for r in stratum_rows])
             )
-            if len(labels_all) < 2:
+            if len(labels_all) < 1:
                 continue
 
             for metric in metrics:
                 data, labels = collect_groups(stratum_rows, param, metric)
-                if len(labels) < 2 or all(len(d) == 0 for d in data):
+                if len(labels) < 1 or all(len(d) == 0 for d in data):
                     continue
 
-                xlabel = param_xlabel_es(param)
+                n_groups = len(labels)
                 ylabel = metric_ylabel_es(metric)
 
+                # xlabel and title depend on number of groups
+                if n_groups == 1:
+                    xlabel = None
+                    title = build_title(
+                        param, metric, stratum_value, multi_fitness,
+                        label_a=labels[0], n_labels=1,
+                    )
+                elif n_groups == 2:
+                    xlabel = None
+                    title = build_title(
+                        param, metric, stratum_value, multi_fitness,
+                        label_a=labels[0], label_b=labels[1],
+                    )
+                else:
+                    xlabel = param_xlabel_es(param)
+                    title = build_title(param, metric, stratum_value, multi_fitness)
+
                 # --- All-methods plot ---
-                title = build_title(param, metric, stratum_value, multi_fitness)
                 fig = plot_all_methods(
                     data, labels, title, ylabel, metric,
                     xlabel=xlabel,
@@ -918,6 +1263,54 @@ def run(
                         written.append(pw_dest)
                         print(f"Saved: {pw_dest}")
 
+    # --- Dual boxplots: two related metrics side by side ---
+    if scatter:
+        efficiency_pairs = [
+            ("generations_run", "fitness_per_generation"),
+        ]
+        if "elapsed_seconds" in fieldnames:
+            efficiency_pairs += [
+                ("elapsed_seconds", "fitness_per_second"),
+                ("generations_run", "elapsed_seconds"),
+            ]
+
+        for param in params:
+            labels_all = sort_category_labels(
+                unique_non_null([r.get(param) for r in rows])
+            )
+            if len(labels_all) < 2:
+                continue
+
+            for stratum_value, stratum_rows in strata:
+                suffix_stratum = stratum_value if multi_fitness else None
+
+                for met_l, met_r in efficiency_pairs:
+                    if met_l not in fieldnames or met_r not in fieldnames:
+                        continue
+                    data_l, labels_l = collect_groups(stratum_rows, param, met_l)
+                    data_r, labels_r = collect_groups(stratum_rows, param, met_r)
+                    # Align labels (use intersection in sorted order)
+                    shared = [lb for lb in labels_l if lb in labels_r]
+                    if not shared:
+                        continue
+                    dl = [data_l[labels_l.index(lb)] for lb in shared]
+                    dr = [data_r[labels_r.index(lb)] for lb in shared]
+                    suffix_txt = (f" (función de aptitud: {suffix_stratum})"
+                                  if suffix_stratum else "")
+                    dual_title = (f"{metric_ylabel_es(met_l)} vs "
+                                  f"{metric_ylabel_es(met_r)}{suffix_txt}")
+                    fig = plot_dual_boxplot(
+                        dl, dr, shared, met_l, met_r, dual_title,
+                    )
+                    name_core = f"dual_{met_l}_vs_{met_r}_by_{param}"
+                    if suffix_stratum:
+                        name_core += f"__fitness_{_safe_filename_part(suffix_stratum)}"
+                    dest = out_dir / f"{_safe_filename_part(name_core)}.png"
+                    save_figure(fig, dest)
+                    plt.close(fig)
+                    written.append(dest)
+                    print(f"Saved: {dest}")
+
     return written
 
 
@@ -944,7 +1337,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--csv",
-        required=True,
+        required=False,
+        default=None,
         type=Path,
         help="Path to CSV produced by experiment_runner.py",
     )
@@ -1025,18 +1419,65 @@ def main() -> None:
         help="Confidence level for CI annotation (default: 0.95). Example: --ci 0.99",
     )
     parser.add_argument(
+        "--scatter",
+        action="store_true",
+        help=(
+            "Generate scatter plots linking generations_run with fitness_per_generation "
+            "(and elapsed_seconds with fitness_per_second if available). "
+            "Each point is one run, coloured by the X-axis parameter."
+        ),
+    )
+    parser.add_argument(
+        "--history-csv",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help=(
+            "Path to the _history.csv produced by experiment_runner. "
+            "When provided, generates convergence curve plots instead of boxplots."
+        ),
+    )
+    parser.add_argument(
+        "--color-by",
+        type=str,
+        default="selector",
+        metavar="COL",
+        help="Column used to colour convergence curves (default: selector).",
+    )
+    parser.add_argument(
+        "--convergence-x",
+        type=str,
+        default="generation",
+        choices=["generation", "elapsed_seconds"],
+        metavar="AXIS",
+        help=(
+            "X axis for convergence curves: 'generation' (default) or "
+            "'elapsed_seconds' (requires elapsed_seconds in history CSV)."
+        ),
+    )
+    parser.add_argument(
+        "--show-seeds",
+        action="store_true",
+        help="Show individual seed lines in convergence plots (default: only mean).",
+    )
+    parser.add_argument(
         "--list-columns",
         action="store_true",
         help="Print plottable column names from the CSV header and exit.",
     )
     args = parser.parse_args()
 
-    csv_path = args.csv.resolve()
-    if not csv_path.is_file():
+    if args.csv is None and args.history_csv is None and not args.list_columns:
+        parser.error("--csv is required unless using --history-csv or --list-columns")
+
+    csv_path = args.csv.resolve() if args.csv else None
+    if csv_path is not None and not csv_path.is_file():
         print(f"File not found: {csv_path}", file=sys.stderr)
         sys.exit(1)
 
     if args.list_columns:
+        if csv_path is None:
+            parser.error("--csv is required with --list-columns")
         rows, fieldnames = load_rows(csv_path)
         validate_columns(fieldnames)
         rows, fieldnames = compute_derived_metrics(rows, fieldnames)
@@ -1065,6 +1506,27 @@ def main() -> None:
     if args.selectors:
         filters.setdefault("selector", []).extend(args.selectors)
 
+    # Convergence mode
+    if args.history_csv is not None:
+        hist_path = args.history_csv.resolve()
+        if not hist_path.is_file():
+            print(f"History CSV not found: {hist_path}", file=sys.stderr)
+            sys.exit(1)
+        paths = plot_convergence_curves(
+            history_csv=hist_path,
+            out_dir=out_dir,
+            filters=filters,
+            color_by=args.color_by,
+            x_axis=args.convergence_x,
+            show_seeds=args.show_seeds,
+        )
+        if paths:
+            print(f"\nTotal: {len(paths)} figure(s) written to {out_dir}")
+        return
+
+    if csv_path is None:
+        parser.error("--csv is required for boxplot mode")
+
     paths = run(
         csv_path=csv_path,
         out_dir=out_dir,
@@ -1075,6 +1537,7 @@ def main() -> None:
         show_mean=args.show_mean,
         add_stats=args.add_stats,
         ci_level=args.ci,
+        scatter=args.scatter,
     )
 
     if paths:
