@@ -9,11 +9,24 @@ Runs all combinations of mutation operators and selection methods to identify:
 
 Outputs results as JSON for heatmap visualization.
 
-Usage:
+Supports both sequential and parallel execution:
+- Sequential (default): runs experiments one by one
+- Parallel: distributes experiments across multiple CPU cores (--max-workers N)
+
+Usage (Sequential):
+  python mutation_selection_grid_experiment.py \
+    --input-image input/Flag_of_France.svg.png \
+    --num-runs 5
+
+Usage (Parallel with 4 workers):
   python mutation_selection_grid_experiment.py \
     --input-image input/Flag_of_France.svg.png \
     --num-runs 5 \
-    --output output/mutation_selection_grid/results.json
+    --max-workers 4
+
+Usage (From config file):
+  python mutation_selection_grid_experiment.py \
+    --config configs/mutation_selection_grid_parallel.json
 """
 
 import argparse
@@ -21,6 +34,7 @@ import json
 import os
 import sys
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from io import BytesIO
 from pathlib import Path
 
@@ -30,6 +44,89 @@ from PIL import Image
 from utils.dispatch import CROSSOVER_MAP, FITNESS_MAP, MUTATION_MAP, SURVIVAL_MAP, build_selector, build_stop_condition
 from genetic_algorithm import run_genetic_algorithm
 from input_output_handler import read_image
+
+
+def _run_single_ga_worker(
+    image_bytes: bytes,
+    selection: str,
+    mutation: str,
+    run_idx: int,
+    triangles: int,
+    population_size: int,
+    generations: int,
+    k: int,
+    crossover: str,
+    fitness: str,
+    survival_strategy: str,
+    mutation_rate: float,
+    mutation_strength: float,
+    convergence_window: int,
+    convergence_delta: float,
+    output_dir: str,
+) -> dict:
+    """
+    Worker function for parallel GA execution.
+    Reconstructs image from bytes and runs a single GA.
+    Returns results with metadata for identification.
+    """
+    try:
+        with Image.open(BytesIO(image_bytes)) as img:
+            source_image = img.convert("RGBA").copy()
+        
+        start_time = time.time()
+        result = run_genetic_algorithm(
+            source_image=source_image,
+            num_triangles=triangles,
+            population_size=population_size,
+            generations=generations,
+            k=k,
+            selector=build_selector(
+                selection,
+                temperature=1.0,
+                temperature_min=0.1,
+                temperature_decay=-0.001,
+                tournament_threshold=0.75,
+            ),
+            crossover=CROSSOVER_MAP[crossover],
+            fitness_fn=FITNESS_MAP[fitness],
+            survival_strategy=SURVIVAL_MAP[survival_strategy],
+            mutation_fn=MUTATION_MAP[mutation],
+            mutation_rate=mutation_rate,
+            mutation_strength=mutation_strength,
+            snapshot_interval=0,
+            output_dir=output_dir,
+            stop_condition=build_stop_condition(
+                target_fitness_val=None,
+                convergence_window=convergence_window,
+                convergence_delta=convergence_delta,
+                time_limit_secs=None,
+            ),
+        )
+        elapsed_time = time.time() - start_time
+        
+        return {
+            "selection": selection,
+            "mutation": mutation,
+            "run_idx": run_idx,
+            "best_fitness": result.best_fitness,
+            "worst_fitness": result.worst_fitness,
+            "generations": result.generations_run,
+            "elapsed_time": elapsed_time,
+            "success": True,
+            "error": None,
+        }
+    except Exception as e:
+        return {
+            "selection": selection,
+            "mutation": mutation,
+            "run_idx": run_idx,
+            "best_fitness": None,
+            "worst_fitness": None,
+            "generations": None,
+            "elapsed_time": None,
+            "success": False,
+            "error": str(e),
+        }
 
 
 def run_grid_experiment(
@@ -47,8 +144,9 @@ def run_grid_experiment(
     convergence_window: int | None = 20,
     convergence_delta: float = 1e-4,
     output_dir: str = "output/mutation_selection_grid",
+    max_workers: int | None = None,
 ) -> None:
-    """Run all mutation × selection combinations."""
+    """Run all mutation × selection combinations, optionally in parallel."""
     
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
@@ -59,9 +157,6 @@ def run_grid_experiment(
     except (FileNotFoundError, OSError) as e:
         print(f"Error reading image: {e}")
         sys.exit(1)
-
-    with Image.open(BytesIO(image_bytes)) as img:
-        source_image = img.convert("RGBA").copy()
 
     # Define grid
     mutations = list(MUTATION_MAP.keys())
@@ -93,6 +188,7 @@ def run_grid_experiment(
             "convergence_window": convergence_window,
             "convergence_delta": convergence_delta,
             "num_runs": num_runs,
+            "max_workers": max_workers,
         },
         "statistics": {
             "avg_best_fitness": {},
@@ -105,85 +201,65 @@ def run_grid_experiment(
     }
     
     total_experiments = len(mutations) * len(selections) * num_runs
-    experiment_count = 0
     
     print(f"Running mutation × selection grid experiment")
     print(f"Mutations: {len(mutations)}, Selections: {len(selections)}, Runs per combo: {num_runs}")
-    print(f"Total experiments: {total_experiments}\n")
+    print(f"Total experiments: {total_experiments}")
+    if max_workers:
+        print(f"Parallel workers: {max_workers}")
+    else:
+        print("Running sequentially (no parallelization)")
+    print()
     
     start_time_total = time.time()
     
-    # Run all combinations
-    for sel_idx, selection in enumerate(selections):
-        print(f"\n{'='*70}")
-        print(f"Selection Method: {selection} ({sel_idx+1}/{len(selections)})")
-        print(f"{'='*70}\n")
-        
-        for mut_idx, mutation in enumerate(mutations):
-            print(f"Mutation: {mutation:20s} ({mut_idx+1}/{len(mutations)})")
-            
-            mutation_results = {
-                "best_fitness": [],
-                "worst_fitness": [],
-                "generations": [],
-                "execution_time": [],
-            }
-            
-            for run in range(num_runs):
-                experiment_count += 1
-                elapsed_total = time.time() - start_time_total
-                eta_remaining = (elapsed_total / experiment_count) * (total_experiments - experiment_count)
-                
-                print(f"  Run {run+1}/{num_runs}  "
-                      f"[{experiment_count}/{total_experiments}]  "
-                      f"Elapsed: {elapsed_total/60:.1f}m  "
-                      f"ETA: {eta_remaining/60:.1f}m", end="")
-                
-                try:
-                    run_start = time.time()
-                    result = run_genetic_algorithm(
-                        source_image=source_image,
-                        num_triangles=triangles,
-                        population_size=population_size,
-                        generations=generations,
-                        k=k,
-                        selector=build_selector(
-                            selection,
-                            temperature=1.0,
-                            temperature_min=0.1,
-                            temperature_decay=-0.001,
-                            tournament_threshold=0.75,
-                        ),
-                        crossover=CROSSOVER_MAP[crossover],
-                        fitness_fn=FITNESS_MAP[fitness],
-                        survival_strategy=SURVIVAL_MAP[survival_strategy],
-                        mutation_fn=MUTATION_MAP[mutation],
-                        mutation_rate=mutation_rate,
-                        mutation_strength=mutation_strength,
-                        snapshot_interval=0,
-                        output_dir=output_dir,
-                        stop_condition=build_stop_condition(
-                            target_fitness_val=None,
-                            convergence_window=convergence_window,
-                            convergence_delta=convergence_delta,
-                            time_limit_secs=None,
-                        ),
-                    )
-                    run_elapsed = time.time() - run_start
-                    
-                    mutation_results["best_fitness"].append(result.best_fitness)
-                    mutation_results["worst_fitness"].append(result.worst_fitness)
-                    mutation_results["generations"].append(result.generations_run)
-                    mutation_results["execution_time"].append(run_elapsed)
-                    
-                    print(f"  → fitness={result.best_fitness:.6f}  gens={result.generations_run}")
-                    
-                except Exception as e:
-                    print(f"  → ERROR: {e}")
-                    continue
-            
-            # Store results
-            results["results"][selection][mutation] = mutation_results["best_fitness"]
+    if max_workers and max_workers > 1:
+        # Parallel execution
+        _run_grid_parallel(
+            results,
+            mutations,
+            selections,
+            image_bytes,
+            num_runs,
+            triangles,
+            population_size,
+            generations,
+            k,
+            crossover,
+            fitness,
+            survival_strategy,
+            mutation_rate,
+            mutation_strength,
+            convergence_window,
+            convergence_delta,
+            output_dir,
+            max_workers,
+            total_experiments,
+            start_time_total,
+        )
+    else:
+        # Sequential execution
+        _run_grid_sequential(
+            results,
+            mutations,
+            selections,
+            image_bytes,
+            num_runs,
+            triangles,
+            population_size,
+            generations,
+            k,
+            crossover,
+            fitness,
+            survival_strategy,
+            mutation_rate,
+            mutation_strength,
+            convergence_window,
+            convergence_delta,
+            output_dir,
+            total_experiments,
+            start_time_total,
+        )
     
     # Compute statistics
     for selection in selections:
@@ -221,6 +297,154 @@ def run_grid_experiment(
             avg = results["statistics"]["avg_best_fitness"][selection][mutation]
             print(f"{avg:16.6f}", end="")
         print()
+
+
+def _run_grid_sequential(
+    results: dict,
+    mutations: list,
+    selections: list,
+    image_bytes: bytes,
+    num_runs: int,
+    triangles: int,
+    population_size: int,
+    generations: int,
+    k: int,
+    crossover: str,
+    fitness: str,
+    survival_strategy: str,
+    mutation_rate: float,
+    mutation_strength: float,
+    convergence_window: int,
+    convergence_delta: float,
+    output_dir: str,
+    total_experiments: int,
+    start_time_total: float,
+) -> None:
+    """Run grid sequentially (original implementation)."""
+    experiment_count = 0
+    
+    for sel_idx, selection in enumerate(selections):
+        print(f"\n{'='*70}")
+        print(f"Selection Method: {selection} ({sel_idx+1}/{len(selections)})")
+        print(f"{'='*70}\n")
+        
+        for mut_idx, mutation in enumerate(mutations):
+            print(f"Mutation: {mutation:20s} ({mut_idx+1}/{len(mutations)})")
+            
+            for run in range(num_runs):
+                experiment_count += 1
+                elapsed_total = time.time() - start_time_total
+                eta_remaining = (elapsed_total / experiment_count) * (total_experiments - experiment_count) if experiment_count > 0 else 0
+                
+                print(f"  Run {run+1}/{num_runs}  "
+                      f"[{experiment_count}/{total_experiments}]  "
+                      f"Elapsed: {elapsed_total/60:.1f}m  "
+                      f"ETA: {eta_remaining/60:.1f}m", end="")
+                
+                worker_result = _run_single_ga_worker(
+                    image_bytes=image_bytes,
+                    selection=selection,
+                    mutation=mutation,
+                    run_idx=run,
+                    triangles=triangles,
+                    population_size=population_size,
+                    generations=generations,
+                    k=k,
+                    crossover=crossover,
+                    fitness=fitness,
+                    survival_strategy=survival_strategy,
+                    mutation_rate=mutation_rate,
+                    mutation_strength=mutation_strength,
+                    convergence_window=convergence_window,
+                    convergence_delta=convergence_delta,
+                    output_dir=output_dir,
+                )
+                
+                if worker_result["success"]:
+                    results["results"][selection][mutation].append(worker_result["best_fitness"])
+                    print(f"  → fitness={worker_result['best_fitness']:.6f}  gens={worker_result['generations']}")
+                else:
+                    print(f"  → ERROR: {worker_result['error']}")
+
+
+def _run_grid_parallel(
+    results: dict,
+    mutations: list,
+    selections: list,
+    image_bytes: bytes,
+    num_runs: int,
+    triangles: int,
+    population_size: int,
+    generations: int,
+    k: int,
+    crossover: str,
+    fitness: str,
+    survival_strategy: str,
+    mutation_rate: float,
+    mutation_strength: float,
+    convergence_window: int,
+    convergence_delta: float,
+    output_dir: str,
+    max_workers: int,
+    total_experiments: int,
+    start_time_total: float,
+) -> None:
+    """Run grid in parallel using ProcessPoolExecutor."""
+    
+    print(f"Starting {max_workers} worker processes...\n")
+    
+    # Build task queue
+    tasks = []
+    task_meta = {}  # Map future to (selection, mutation, run)
+    
+    for selection in selections:
+        for mutation in mutations:
+            for run in range(num_runs):
+                tasks.append((
+                    image_bytes, selection, mutation, run,
+                    triangles, population_size, generations, k,
+                    crossover, fitness, survival_strategy,
+                    mutation_rate, mutation_strength,
+                    convergence_window, convergence_delta,
+                    output_dir,
+                ))
+    
+    completed_count = 0
+    
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all tasks
+        future_to_task = {
+            executor.submit(_run_single_ga_worker, *task): task
+            for task in tasks
+        }
+        
+        # Process results as they complete
+        for future in as_completed(future_to_task):
+            completed_count += 1
+            elapsed_total = time.time() - start_time_total
+            eta_remaining = (elapsed_total / completed_count) * (total_experiments - completed_count) if completed_count > 0 else 0
+            
+            try:
+                worker_result = future.result()
+                selection = worker_result["selection"]
+                mutation = worker_result["mutation"]
+                run_idx = worker_result["run_idx"]
+                
+                if worker_result["success"]:
+                    results["results"][selection][mutation].append(worker_result["best_fitness"])
+                    print(f"[{completed_count}/{total_experiments}] "
+                          f"{selection:15s} × {mutation:20s} run {run_idx+1}  "
+                          f"fitness={worker_result['best_fitness']:.6f}  "
+                          f"gens={worker_result['generations']}  "
+                          f"Elapsed: {elapsed_total/60:.1f}m  ETA: {eta_remaining/60:.1f}m")
+                else:
+                    print(f"[{completed_count}/{total_experiments}] "
+                          f"{selection:15s} × {mutation:20s} run {run_idx+1}  "
+                          f"ERROR: {worker_result['error']}")
+                    
+            except Exception as e:
+                print(f"[{completed_count}/{total_experiments}] Worker process failed: {e}")
+
 
 
 def load_config(config_path: str) -> dict:
@@ -330,6 +554,13 @@ def main():
         help="Output directory [default: output/mutation_selection_grid]",
     )
     
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        help="Max parallel workers for grid execution (None = sequential, "
+             "N = use N processes, auto-detect if not provided) [default: None]",
+    )
+    
     args = parser.parse_args()
     
     # Load config file if provided
@@ -358,6 +589,7 @@ def main():
         mutation_strength=args.mutation_strength or config.get("mutation_strength", 0.28),
         convergence_window=args.convergence_window or config.get("convergence_window", 20),
         output_dir=args.output or config.get("output", "output/mutation_selection_grid"),
+        max_workers=args.max_workers or config.get("max_workers"),
     )
 
 

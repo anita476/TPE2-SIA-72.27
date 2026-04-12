@@ -1,5 +1,5 @@
 {
-  "input_image": "input/Flag_of_France.svg.png",
+  "input_image": "input/france-flag.png",
   "num_runs": 5,
   "triangles": 200,
   "population_size": 100,
@@ -11,5 +11,6 @@
   "mutation_rate": 0.22,
   "mutation_strength": 0.28,
   "convergence_window": 20,
-  "output": "output/mutation_selection_grid"
+  "output": "output/mutation_selection_grid",
+  "max_workers": 4
 }
