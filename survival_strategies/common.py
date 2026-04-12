@@ -62,7 +62,7 @@ class PopulationEvaluator:
         pending_individuals = [individual for _, (individual, _) in pending_items]
 
         for (key, (_, indices)), score in zip(pending_items, _pool.map(self._compute_fitness, pending_individuals)):
-            self._fitness_cache[key] = score
+            self._fitness_cache[key] = score # @todo cache is never evicted, accumulates endlessly (probs fine for our nb of gens)
             for index in indices:
                 scores[index] = score
 
