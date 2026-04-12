@@ -14,8 +14,8 @@ def target_fitness(threshold: float) -> StopCondition:
         return best_score >= threshold
     return condition
 
+"""
 def no_improvement(window: int, min_delta: float = 1e-4) -> StopCondition:
-    """Stop when the best fitness hasn't improved by more than min_delta over the last `window` generations."""
     history: list[float] = []
 
     def condition(_generation: int, best_score: float, _fitness_scores: list[float]) -> bool:
@@ -25,7 +25,16 @@ def no_improvement(window: int, min_delta: float = 1e-4) -> StopCondition:
         return (history[-1] - history[-window]) < min_delta
 
     return condition
-
+"""
+def no_improvement(window: int, min_delta: float = 1e-4) -> StopCondition:
+    history: list[float] = []
+    def condition(_generation: int, best_score: float, _fitness_scores: list[float]) -> bool:
+        history.append(best_score)
+        if len(history) < window:
+            return False
+        # max improvement over entire window, not just endpoints
+        return (max(history[-window:]) - min(history[-window:])) < min_delta
+    return condition
 
 def population_converged(min_std: float = 1e-3) -> StopCondition:
     """Stop when the std dev of fitness scores drops below min_std (population has converged)."""
