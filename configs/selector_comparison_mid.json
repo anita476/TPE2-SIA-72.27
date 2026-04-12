@@ -1,17 +1,17 @@
 {
   "base": {
-    "input_image": "input/germany.png",
+    "input_image": "input/uruguay.png",
     "triangles": 350,
     "population_size": 200,
-    "k": 80,
-    "mutation_rate": 0.22,
-    "mutation_strength": 0.28,
+    "k": 120,
+    "mutation_rate": 0.20,
+    "mutation_strength": 0.20,
     "mutation": "multigen_limited",
-    "crossover": "annular",
+    "crossover": "uniform",
     "survival_strategy": "exclusive",
-    "convergence_window": 100,
-    "convergence_delta": 0.01,
-    "output_dir": "output/selector_comparison_mid",
+    "convergence_window": 2000,
+    "convergence_delta": 0.0001,
+    "output_dir": "output/mid",
     "snapshot_interval": 0
   },
   "grid": {
@@ -25,7 +25,7 @@
       "tournament_stoch"
     ],
     "fitness": ["rmse5"],
-    "generations": [500],
-    "seed": [1, 2, 3, 4, 5]
+    "generations": [5000],
+    "seed": [1, 2, 3]
   }
 }

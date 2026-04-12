@@ -12,7 +12,7 @@ def tournament_deterministic(
     De los M individuos, se elige el mejor.
     Se repite el proceso hasta conseguir los K individuos que se precisan.
     """
-    subset_num = 2 # @todo change later to be configurable
+    subset_num = 5 # @todo change later to be configurable
     selected = []
 
     for _ in range(k):

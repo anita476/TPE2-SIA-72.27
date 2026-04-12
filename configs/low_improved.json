@@ -1,0 +1,23 @@
+{
+    "base": {
+      "input_image": "input/france.png",
+      "triangles": 200,
+      "population_size": 100,
+      "k": 60,
+      "crossover": "uniform",
+      "mutation": "multigen_limited",
+      "mutation_rate": 0.20,
+      "mutation_strength": 0.20,
+      "survival_strategy": "exclusive",
+      "fitness": "rmse5",
+      "generations": 5000,
+      "convergence_window": 1500,
+      "convergence_delta": 0.0001,
+      "snapshot_interval": 0
+    },
+    "grid": {
+      "selector": ["tournament_det"],
+      "seed": [1, 2, 3, 4, 5]
+    },
+    "output_dir": "output/low_improved/imagess"
+}
