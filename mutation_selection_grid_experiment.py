@@ -223,6 +223,19 @@ def run_grid_experiment(
         print()
 
 
+def load_config(config_path: str) -> dict:
+    """Load experiment configuration from JSON file."""
+    try:
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print(f"Error: Config file not found: {config_path}")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        print(f"Error: Failed to parse config JSON: {e}")
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -230,51 +243,51 @@ def main():
     )
     
     parser.add_argument(
+        "--config",
+        type=str,
+        help="Path to config JSON file (values will be used as defaults, "
+             "overridden by CLI arguments)",
+    )
+    
+    parser.add_argument(
         "--input-image",
         type=str,
-        required=True,
         help="Path to input image",
     )
     
     parser.add_argument(
         "--num-runs",
         type=int,
-        default=5,
         help="Number of runs per combination [default: 5]",
     )
     
     parser.add_argument(
         "--triangles",
         type=int,
-        default=200,
         help="Number of triangles [default: 200]",
     )
     
     parser.add_argument(
         "--population-size",
         type=int,
-        default=100,
         help="Population size [default: 100]",
     )
     
     parser.add_argument(
         "--generations",
         type=int,
-        default=500,
         help="Max generations [default: 500]",
     )
     
     parser.add_argument(
         "--k",
         type=int,
-        default=40,
         help="Selection pool size [default: 40]",
     )
     
     parser.add_argument(
         "--crossover",
         type=str,
-        default="annular",
         choices=list(CROSSOVER_MAP.keys()),
         help="Crossover operator [default: annular]",
     )
@@ -282,7 +295,6 @@ def main():
     parser.add_argument(
         "--fitness",
         type=str,
-        default="rmse5",
         choices=list(FITNESS_MAP.keys()),
         help="Fitness function [default: rmse5]",
     )
@@ -290,7 +302,6 @@ def main():
     parser.add_argument(
         "--survival-strategy",
         type=str,
-        default="exclusive",
         choices=list(SURVIVAL_MAP.keys()),
         help="Survival strategy [default: exclusive]",
     )
@@ -298,47 +309,55 @@ def main():
     parser.add_argument(
         "--mutation-rate",
         type=float,
-        default=0.22,
         help="Mutation rate [default: 0.22]",
     )
     
     parser.add_argument(
         "--mutation-strength",
         type=float,
-        default=0.28,
         help="Mutation strength [default: 0.28]",
     )
     
     parser.add_argument(
         "--convergence-window",
         type=int,
-        default=20,
         help="Convergence window for early stopping [default: 20]",
     )
     
     parser.add_argument(
         "--output",
         type=str,
-        default="output/mutation_selection_grid",
         help="Output directory [default: output/mutation_selection_grid]",
     )
     
     args = parser.parse_args()
     
+    # Load config file if provided
+    config = {}
+    if args.config:
+        config = load_config(args.config)
+        print(f"Loaded config from: {args.config}\n")
+    
+    # CLI arguments override config file values
+    input_image = args.input_image or config.get("input_image")
+    if not input_image:
+        print("Error: --input-image is required (via CLI or config)")
+        sys.exit(1)
+    
     run_grid_experiment(
-        input_image_path=args.input_image,
-        num_runs=args.num_runs,
-        triangles=args.triangles,
-        population_size=args.population_size,
-        generations=args.generations,
-        k=args.k,
-        crossover=args.crossover,
-        fitness=args.fitness,
-        survival_strategy=args.survival_strategy,
-        mutation_rate=args.mutation_rate,
-        mutation_strength=args.mutation_strength,
-        convergence_window=args.convergence_window,
-        output_dir=args.output,
+        input_image_path=input_image,
+        num_runs=args.num_runs or config.get("num_runs", 5),
+        triangles=args.triangles or config.get("triangles", 200),
+        population_size=args.population_size or config.get("population_size", 100),
+        generations=args.generations or config.get("generations", 500),
+        k=args.k or config.get("k", 40),
+        crossover=args.crossover or config.get("crossover", "annular"),
+        fitness=args.fitness or config.get("fitness", "rmse5"),
+        survival_strategy=args.survival_strategy or config.get("survival_strategy", "exclusive"),
+        mutation_rate=args.mutation_rate or config.get("mutation_rate", 0.22),
+        mutation_strength=args.mutation_strength or config.get("mutation_strength", 0.28),
+        convergence_window=args.convergence_window or config.get("convergence_window", 20),
+        output_dir=args.output or config.get("output", "output/mutation_selection_grid"),
     )
 
 
