@@ -17,12 +17,25 @@ def boltzmann(
     temperature: float,
 ) -> list[Individual]:
     """
-    boltzmann_factor(i) = e^(f(i) / T)
-    expval(i)           = boltzmann_factor(i) / <boltzmann_factor(x)>_g
-    Selection probability is proportional to how much better than the population average the individual is.
-    Higher temperature flattens differences -> more exploration; lower temperature sharpens them -> more exploitation.
+    f_norm(i) = f(i) / mean(f)
+
+    When the population is diverse: outliers get amplified → strong selection pressure.
+    When the population has converged: all f_norm ≈ 1 → selection becomes near-uniform,
+    naturally preventing lock-in on a local optimum.
+
+    At high T: near-uniform selection (exploration).
+    At low T: strongly favors individuals above the mean (exploitation).
+
+    boltzmann_factor(i) = exp(f_norm(i) / T)
+    p(i) = boltzmann_factor(i) / sum(boltzmann_factor)
     """
-    boltzmann_factors = [math.exp(fitness_scores[i] / temperature) for i in range(len(population))]
+    avg_f = sum(fitness_scores) / len(fitness_scores)
+
+    if avg_f < 1e-9:
+        return [population[i] for i in (rng.randrange(len(population)) for _ in range(k))]
+
+    normalized = [f / avg_f for f in fitness_scores]
+    boltzmann_factors = [math.exp(n / temperature) for n in normalized]
     total = sum(boltzmann_factors)
 
     cumulative = list(itertools.accumulate(v / total for v in boltzmann_factors))

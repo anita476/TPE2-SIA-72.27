@@ -49,6 +49,8 @@ def run_threshold_analysis(
     mutation: str = "multigen_limited",
     mutation_rate: float = 0.22,
     mutation_strength: float = 0.28,
+    convergence_window: int | None = None,
+    convergence_delta: float = 1e-4,
     output_dir: str = "output/threshold_analysis",
 ) -> None:
     """Run GA experiments with varying stochastic tournament thresholds."""
@@ -120,10 +122,10 @@ def run_threshold_analysis(
                     k=k,
                     selector=build_selector(
                         baseline_name,
-                        temperature=50.0,
-                        temperature_min=1.0,
-                        temperature_decay=-0.005,
-                        tournament_threshold=0.5,  # Not used for elite/tournament_det
+                        temperature=1.0,
+                        temperature_min=0.1,
+                        temperature_decay=-0.001,
+                        tournament_threshold=0.75,  # Not used for elite/tournament_det
                     ),
                     crossover=CROSSOVER_MAP[crossover],
                     fitness_fn=FITNESS_MAP[fitness],
@@ -183,9 +185,9 @@ def run_threshold_analysis(
                     k=k,
                     selector=build_selector(
                         "tournament_stoch",
-                        temperature=50.0,
-                        temperature_min=1.0,
-                        temperature_decay=-0.005,
+                        temperature=1.0,
+                        temperature_min=0.1,
+                        temperature_decay=-0.001,
                         tournament_threshold=threshold,
                     ),
                     crossover=CROSSOVER_MAP[crossover],
@@ -484,8 +486,10 @@ def main():
     parser.add_argument("--fitness", type=str, default="rmse5", choices=["mae", "mse", "rmse", "mse5", "rmse5"], help="Fitness function (default: rmse5)")
     parser.add_argument("--survival-strategy", type=str, default="exclusive", choices=["additive", "exclusive"], help="Survival strategy (default: exclusive)")
     parser.add_argument("--mutation", type=str, default="multigen_limited", choices=["gen", "multigen_limited", "multigen_uniform", "complete"], help="Mutation operator (default: multigen_limited)")
-    parser.add_argument("--mutation-rate", type=float, default=0.22, help="Mutation rate (default: 0.1)")
-    parser.add_argument("--mutation-strength", type=float, default=0.28, help="Mutation strength (default: 0.3)")
+    parser.add_argument("--mutation-rate", type=float, default=0.22, help="Mutation rate (default: 0.22)")
+    parser.add_argument("--mutation-strength", type=float, default=0.28, help="Mutation strength (default: 0.28)")
+    parser.add_argument("--convergence-window", type=int, default=None, help="Stop when no improvement over this many generations (default: disabled)")
+    parser.add_argument("--convergence-delta", type=float, default=1e-4, help="Minimum improvement to count as progress (default: 1e-4)")
     parser.add_argument("--output-dir", type=str, default="output/threshold_analysis", help="Output directory (default: output/threshold_analysis)")
     
     args = parser.parse_args()
@@ -503,6 +507,8 @@ def main():
         mutation=args.mutation,
         mutation_rate=args.mutation_rate,
         mutation_strength=args.mutation_strength,
+        convergence_window=args.convergence_window,
+        convergence_delta=args.convergence_delta,
         output_dir=args.output_dir,
     )
 
