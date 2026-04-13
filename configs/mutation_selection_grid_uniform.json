@@ -5,12 +5,12 @@
   "population_size": 100,
   "generations": 1000,
   "k": 40,
-  "crossover": "annular",
+  "crossover": "uniform",
   "fitness": "rmse5",
   "survival_strategy": "exclusive",
   "mutation_rate": 0.22,
   "mutation_strength": 0.28,
   "convergence_window": 60,
-  "output": "output/mutation_selection_grid",
+  "output": "output/mutation_selection_grid_uniform",
   "max_workers": 4
 }

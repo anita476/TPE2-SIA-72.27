@@ -1,0 +1,18 @@
+{
+  "input_image": "input/brazil-flag.png",
+  "num_runs": 5,
+  "triangles": 400,
+  "num_thresholds": 10,
+  "population_size": 100,
+  "generations": 2000,
+  "k": 40,
+  "crossover": "uniform",
+  "fitness": "rmse5",
+  "survival_strategy": "exclusive",
+  "mutation": "multigen_uniform",
+  "mutation_rate": 0.22,
+  "mutation_strength": 0.28,
+  "output": "output/threshold_brazil",
+  "workers": 4,
+  "seed": 42
+}
