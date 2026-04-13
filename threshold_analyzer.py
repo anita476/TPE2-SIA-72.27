@@ -108,6 +108,7 @@ def run_threshold_analysis(
     convergence_delta: float = 1e-4,
     output_dir: str = "output/threshold_analysis",
     workers: int = 1,
+    verbose: bool = False,
 ) -> None:
     """Run GA experiments with varying stochastic tournament thresholds."""
     
@@ -160,7 +161,7 @@ def run_threshold_analysis(
           f"({num_runs} runs × {num_thresholds} thresholds + {num_runs} × 2 baselines) "
           f"with {workers} worker(s)...\n")
 
-    verbose_run = workers == 1
+    verbose_run = verbose
     executor_cls = (
         concurrent.futures.ProcessPoolExecutor if workers > 1
         else concurrent.futures.ThreadPoolExecutor
@@ -463,6 +464,7 @@ def main():
     parser.add_argument("--convergence-delta", type=float, help="Minimum improvement to count as progress (default: 1e-4)")
     parser.add_argument("--output-dir", type=str, help="Output directory (default: output/threshold_analysis)")
     parser.add_argument("--workers", type=int, help="Number of parallel workers (default: 1)")
+    parser.add_argument("--verbose", action="store_true", help="Print generation-by-generation progress")
 
     args = parser.parse_args()
     
@@ -496,6 +498,7 @@ def main():
         convergence_delta=args.convergence_delta or config.get("convergence_delta", 1e-4),
         output_dir=args.output_dir or config.get("output_dir", "output/threshold_analysis"),
         workers=args.workers or config.get("workers", 1),
+        verbose=args.verbose or config.get("verbose", False),
     )
 
 
