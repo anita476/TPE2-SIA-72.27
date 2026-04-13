@@ -1,16 +1,18 @@
 {
   "input_image": "input/france-flag.png",
   "num_runs": 5,
-  "triangles": 200,
+  "triangles": 400,
+  "num_thresholds": 10,
   "population_size": 100,
-  "generations": 1000,
+  "generations": 2000,
   "k": 40,
-  "crossover": "annular",
+  "crossover": "uniform",
   "fitness": "rmse5",
   "survival_strategy": "exclusive",
+  "mutation": "multigen_uniform",
   "mutation_rate": 0.22,
   "mutation_strength": 0.28,
-  "convergence_window": 60,
-  "output": "output/mutation_selection_grid",
-  "max_workers": 4
+  "output": "output/threshold_france",
+  "workers": 4,
+  "seed": 42
 }
