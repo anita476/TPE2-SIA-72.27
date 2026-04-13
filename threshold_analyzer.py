@@ -4,6 +4,8 @@ Analyzes the effect of stochastic tournament threshold on GA performance.
 Runs the GA multiple times with uniformly-spaced thresholds from 0.5 to 1.0,
 using stochastic tournament selection and no_improvement stop condition.
 
+Supports seeded reproducibility: use --seed to ensure identical runs across experiments.
+
 Plots:
 1. Final best fitness score vs threshold
 2. Worst final fitness score vs threshold
@@ -12,10 +14,19 @@ Plots:
 5. Comparison with elite and tournament deterministic selections
 
 Usage:
+  # Basic usage
   python threshold_analyzer.py --input-image input/Flag_of_France.svg.png \
                                --num-runs 5 \
                                --num-thresholds 10 \
                                --convergence-window 20
+  
+  # With reproducible seed (each run gets unique seed: seed+0, seed+1, seed+2, ...)
+  python threshold_analyzer.py --input-image input/Flag_of_France.svg.png \
+                               --seed 42 \
+                               --num-runs 5
+  
+  # From config file
+  python threshold_analyzer.py --config configs/threshold_analysis.json
 """
 
 import argparse
@@ -76,6 +87,7 @@ def _run_one_threshold(image_bytes: bytes, job: dict, verbose: bool = False) -> 
         output_dir=job["output_dir"],
         stop_condition=stop,
         verbose=verbose,
+        seed=job.get("seed"),
     )
     elapsed = time.perf_counter() - t0
 
@@ -109,6 +121,7 @@ def run_threshold_analysis(
     output_dir: str = "output/threshold_analysis",
     workers: int = 1,
     verbose: bool = False,
+    seed: int | None = None,
 ) -> None:
     """Run GA experiments with varying stochastic tournament thresholds."""
     
@@ -144,17 +157,23 @@ def run_threshold_analysis(
 
     # Build job list
     jobs: list[dict] = []
+    job_counter = 0
 
     for baseline_name in ["elite", "tournament_det"]:
         for run in range(num_runs):
+            job_seed = seed + job_counter if seed is not None else None
             jobs.append({**base_params, "selector_name": baseline_name,
                          "threshold": 0.75, "run_index": run,
-                         "convergence_window": None})  # baselines run to completion
+                         "convergence_window": None, "seed": job_seed})  # baselines run to completion
+            job_counter += 1
 
     for threshold in thresholds:
         for run in range(num_runs):
+            job_seed = seed + job_counter if seed is not None else None
             jobs.append({**base_params, "selector_name": "tournament_stoch",
-                         "threshold": float(threshold), "run_index": run})
+                         "threshold": float(threshold), "run_index": run, "seed": job_seed})
+            job_counter += 1
+
 
     total = len(jobs)
     print(f"Running {total} experiments "
@@ -465,6 +484,7 @@ def main():
     parser.add_argument("--output-dir", type=str, help="Output directory (default: output/threshold_analysis)")
     parser.add_argument("--workers", type=int, help="Number of parallel workers (default: 1)")
     parser.add_argument("--verbose", action="store_true", help="Print generation-by-generation progress")
+    parser.add_argument("--seed", type=int, help="Random seed for reproducibility (generates unique seeds per run)")
 
     args = parser.parse_args()
     
@@ -499,6 +519,7 @@ def main():
         output_dir=args.output_dir or config.get("output_dir", "output/threshold_analysis"),
         workers=args.workers or config.get("workers", 1),
         verbose=args.verbose or config.get("verbose", False),
+        seed=args.seed or config.get("seed"),
     )
 
 
