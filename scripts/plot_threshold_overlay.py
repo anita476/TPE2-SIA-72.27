@@ -192,11 +192,9 @@ def plot_threshold_overlay(
                 zorder=1,
             )
     
-    # Formatting
     ax.set_xlabel("Tournament Threshold", color=STYLE["text_axis"])
     ax.set_ylabel("Fitness Score", color=STYLE["text_axis"])
     
-    # Use metric name for title
     metric_display = metric.replace("_", " ").title()
     ax.set_title(f"Threshold Analysis Overlay: {metric_display}", 
                  color=STYLE["text_title"], pad=15)
