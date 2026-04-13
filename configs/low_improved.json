@@ -16,8 +16,8 @@
       "snapshot_interval": 0
     },
     "grid": {
-      "selector": ["tournament_det"],
+      "selector": ["elite", "roulette", "universal", "ranking", "boltzmann", "tournament_det", "tournament_stoch"],
       "seed": [1, 2, 3, 4, 5]
     },
-    "output_dir": "output/low_improved/imagess"
+    "output_dir": "output/low_improved/images"
 }
