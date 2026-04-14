@@ -71,6 +71,7 @@ def _run_one(image_bytes: bytes, merged: dict, params: dict, verbose: bool = Fal
             merged.get("temperature_min", 0.1),
             merged.get("temperature_decay", -0.001),
             merged.get("tournament_threshold", 0.75),
+            merged.get("tournament_size", 2),
         ),
         crossover=CROSSOVER_MAP[merged["crossover"]],
         fitness_fn=FITNESS_MAP[merged["fitness"]],

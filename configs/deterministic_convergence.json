@@ -1,0 +1,30 @@
+
+{
+  "base": {
+    "input_image": "input/france-flag.png",
+    "triangles": 200,
+    "population_size": 100,
+    "generations": 1000,
+    "k": 60,
+    "selector": "tournament_det",
+    "crossover": "uniform",
+    "fitness": "rmse5",
+    "survival_strategy": "exclusive",
+    "mutation_rate": 0.22,
+    "mutation_strength": 0.3,
+    "snapshot_interval": 0,
+    "output_dir": "output/experiments/deterministic_tournament",
+    "seed": 10
+  },
+  "grid": {
+    "tournament_size": [
+      2,
+      3,
+      5,
+      8,
+      10,
+      15,
+      20
+    ]
+  }
+}
