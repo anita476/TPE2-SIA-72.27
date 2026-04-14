@@ -15,7 +15,11 @@ To run the project inside a virtual environment:
 
 ```bash
 python -m venv .venv
+# Windows
 .venv\Scripts\activate
+# macOS/Linux
+source .venv/bin/activate
+
 pip install -r requirements.txt
 ```
 
@@ -23,34 +27,25 @@ pip install -r requirements.txt
 
 ### CLI example
 
-```bash
-python main.py ^
-  --input_image input/france-flag.png ^
-  --output_image output/result.png ^
-  --triangles 200 ^
-  --population-size 100 ^
-  --generations 5000 ^
-  --k 60 ^
-  --selector elite ^
-  --crossover uniform ^
-  --mutation multigen_limited ^
-  --mutation-rate 0.20 ^
-  --mutation-strength 0.20 ^
-  --fitness rmse5 ^
-  --survival_strategy exclusive
+```
+python main.py --input_image input/france-flag.png --output_image output/result.png --triangles 200 --population-size 100 --generations 5000 --k 60 --selector elite --crossover uniform --mutation multigen_limited --mutation-rate 0.20 --mutation-strength 0.20 --fitness rmse5 --survival_strategy exclusive
 ```
 
 ### Config-driven run (recommended)
 
+`main.py` accepts flat JSON configs (all keys at the top level, like `configs/france_quick.json`):
+
 ```bash
-python main.py --config configs/low_improved.json
+python main.py --config configs/france_quick.json
 ```
 
 CLI arguments override config values:
 
 ```bash
-python main.py --config configs/low_improved.json --selector boltzmann --generations 7000
+python main.py --config configs/france_quick.json --selector boltzmann --generations 7000
 ```
+
+> **Note:** Grid configs with `base`/`grid` keys (e.g. `configs/low_improved.json`) are only for `experiment_runner.py` — they will not work with `main.py`.
 
 ## Main Parameters (current defaults)
 
@@ -82,6 +77,12 @@ python main.py --config configs/low_improved.json --selector boltzmann --generat
 | `boltzmann`        | no      | Temperature-based probabilistic selection                |
 | `tournament_det`   | no      | Tournament with deterministic winner                     |
 | `tournament_stoch` | no      | Tournament where winner depends on threshold probability |
+
+**Tournament-specific:**
+
+| Argument                | Default | Description                                              |
+| ----------------------- | ------- | -------------------------------------------------------- |
+| `--tournament-threshold` | `0.75`  | Win probability for better individual in `tournament_stoch` (0.5–1.0) |
 
 ### Crossover (`--crossover`)
 

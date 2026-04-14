@@ -1,6 +1,6 @@
 {
-  "input_image": "input/Flag_of_France.svg.png",
-  "output_image": "output/Flag_of_France.png",
+  "input_image": "input/france-flag.png",
+  "output_image": "output/france-flag.png",
   "triangles": 200,
   "population_size": 100,
   "generations": 500,

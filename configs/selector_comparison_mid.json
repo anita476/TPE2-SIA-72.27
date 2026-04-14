@@ -1,6 +1,6 @@
 {
   "base": {
-    "input_image": "input/uruguay.png",
+    "input_image": "input/uruguay-flag.png",
     "triangles": 350,
     "population_size": 200,
     "k": 120,

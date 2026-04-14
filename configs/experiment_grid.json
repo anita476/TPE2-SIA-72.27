@@ -1,6 +1,6 @@
 {
   "base": {
-    "input_image": "input/Flag_of_France.svg.png",
+    "input_image": "input/france-flag.png",
     "triangles": 200,
     "mutation_rate": 0.1,
     "mutation_strength": 0.3,

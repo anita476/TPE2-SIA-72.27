@@ -1,6 +1,6 @@
 {
   "base": {
-    "input_image": "input/germany.png",
+    "input_image": "input/france-flag.png",
     "triangles": 500,
     "population_size": 300,
     "k": 120,
