@@ -1,10 +1,10 @@
 {
-  "input_image": "input/brazil-flag.png",
+  "input_image": "input/france-flag.png",
   "num_runs": 5,
-  "triangles": 200,
+  "triangles": 50,
   "num_thresholds": 5,
   "population_size": 100,
-  "generations": 1000,
+  "generations": 500,
   "k": 40,
   "crossover": "uniform",
   "fitness": "rmse5",
@@ -12,7 +12,7 @@
   "mutation": "multigen_uniform",
   "mutation_rate": 0.20,
   "mutation_strength": 0.22,
-  "output": "output/threshold_brazil",
+  "output": "output/threshold_france_small",
   "workers": 4,
   "seed": 42
 }

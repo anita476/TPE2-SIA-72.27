@@ -239,7 +239,7 @@ def run_experiment(
     tournament_sizes: list[int] | None = None,
     population_size: int = 100,
     generations: int = 500,
-    k: int = 60,
+    k: int = 40,
     crossover: str = "uniform",
     fitness: str = "rmse5",
     survival_strategy: str = "exclusive",
