@@ -75,6 +75,7 @@ def _run_one(image_bytes: bytes, merged: dict, params: dict, verbose: bool = Fal
         mutation_strength=merged.get("mutation_strength", 0.15),
         snapshot_interval=0,
         output_dir=merged.get("output_dir", "output/experiments"),
+        seed=merged.get("seed"),
         stop_condition=build_stop_condition(
             merged.get("target_fitness"),
             merged.get("convergence_window"),
@@ -106,12 +107,28 @@ def run_experiments(
         config = json.load(f)
 
     base = config["base"]
-    grid = config["grid"]
+    grid = config.get("grid", {})
+    pairs = config.get("pairs", [])
 
     image_bytes = read_image(base["input_image"])
 
     keys = list(grid.keys())
-    combinations = list(itertools.product(*[grid[k] for k in keys]))
+    grid_combinations = list(itertools.product(*[grid[k] for k in keys]))
+
+    if pairs:
+        pair_keys_list = [list(p.keys()) for p in pairs]
+        pair_vals_list = [list(zip(*p.values())) for p in pairs]
+        pair_combinations = list(itertools.product(*pair_vals_list))
+
+        flat_pair_keys = [k for group in pair_keys_list for k in group]
+        combinations = []
+        for grid_vals in grid_combinations:
+            for pair_vals_tuple in pair_combinations:
+                flat_pair_vals = [v for group in pair_vals_tuple for v in group]
+                combinations.append(tuple(list(grid_vals) + flat_pair_vals))
+        keys = keys + flat_pair_keys
+    else:
+        combinations = grid_combinations
     total = len(combinations)
     workers = min(workers, total)
     print(f"Running {total} experiment(s) with {workers} worker(s)...\n")
