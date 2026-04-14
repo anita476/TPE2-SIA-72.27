@@ -35,8 +35,13 @@ import os
 import sys
 import time
 from io import BytesIO
+from pathlib import Path
 
 from PIL import Image
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from utils.dispatch import CROSSOVER_MAP, FITNESS_MAP, MUTATION_MAP, SURVIVAL_MAP, build_selector, build_stop_condition
 from genetic_algorithm import run_genetic_algorithm
