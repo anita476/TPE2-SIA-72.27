@@ -69,6 +69,7 @@ python main.py --config configs/low_improved.json --selector boltzmann --generat
 | `--seed`              | `None`       | Random seed for reproducibility                               |
 | `--snapshot-interval` | `0`          | Save snapshot every N generations (`0` disables)              |
 | `--output-dir`        | `snapshots`  | Snapshot directory                                            |
+| `--tournament-size`   | `2`          | Tournament size (M) for deterministic tournament              |
 
 ### Selection (`--selector`)
 

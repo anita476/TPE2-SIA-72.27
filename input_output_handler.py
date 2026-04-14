@@ -37,6 +37,7 @@ def parse_arguments() -> argparse.Namespace:
     argument_parser.add_argument("--output-dir", type=str, default="snapshots", help="Directory for snapshot images")
     argument_parser.add_argument("--selector", type=str, default="elite", choices=["elite", "roulette", "universal", "ranking", "boltzmann", "tournament_det", "tournament_stoch"], help="Selection method")
     argument_parser.add_argument("--tournament-threshold", type=float, default=0.75, help="Threshold for stochastic tournament selection (0.5 to 1.0)")
+    argument_parser.add_argument("--tournament-size", type=int, default=2, help="Number of individuals competing in each tournament (tournament_det)")
     argument_parser.add_argument("--crossover", type=str, default="two_point", choices=["annular", "one_point", "swapper", "two_point", "uniform"], help="Crossover operator")
     argument_parser.add_argument("--fitness", type=str, default="mae", choices=["mae", "mse", "rmse", "mse5", "rmse5"], help="Fitness function; higher is better")
     argument_parser.add_argument("--mutation", type=str, default="multigen_uniform", choices=["gen", "multigen_limited", "multigen_uniform", "complete"], help="Mutation strategy: gen (single gene), multigen_limited (random subset), multigen_uniform (each gene independently), complete (all genes)")
